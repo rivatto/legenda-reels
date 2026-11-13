@@ -21,7 +21,7 @@
 
     var LG = {};
     LG.NAME = "chavebaixa reels";
-    LG.VERSION = "1.6.2";
+    LG.VERSION = "1.6.3";
     // de onde o carregador baixa as atualizacoes (pasta "raw" do repositorio no GitHub, terminando em /)
     LG.UPDATE_URL = "https://raw.githubusercontent.com/rivatto/legenda-reels/main/";
     LG.PREFIX = "LG | ";
@@ -987,7 +987,8 @@
         inner.orientation = "column"; inner.alignment = ["fill", "top"]; inner.alignChildren = ["fill", "top"]; inner.spacing = 6; inner.margins = 0;
         var sb = win.add("scrollbar", undefined, 0, 0, 100);
         sb.preferredSize = [UI.W + 16, 4];
-        try { sb.stepdelta = 30; sb.jumpdelta = 120; } catch (eS) {}
+        try { sb.stepdelta = 16; sb.jumpdelta = 90; } catch (eS) {}
+        var lastScroll = 0;
         var foot = win.add("group");
         foot.orientation = "column"; foot.alignChildren = ["fill", "top"]; foot.spacing = 6; foot.margins = 0;
         function syncScroll() {
@@ -1014,7 +1015,7 @@
             } catch (e) {}
             syncScroll();
         }
-        sb.onChanging = sb.onChange = function () { try { inner.location = [0, -Math.round(this.value)]; } catch (e) {} };
+        sb.onChanging = sb.onChange = function () { lastScroll = new Date().getTime(); try { inner.location = [0, -Math.round(this.value)]; } catch (e) {} };
 
         var frame = 0, i;
         var cur = parseInt(loadSetting("cur", "0"), 10) || 0;
@@ -1110,7 +1111,7 @@
             uiCard(g, 0, 0, W, H, 14, UI.card, UI.line);
             uiDoodles(g, 0, 0, W, H, UI.line, 0);
             // "celular" 9:16
-            var ph = H - 18, pw = Math.round(ph * 9 / 16), x0 = 10, y0 = 9, cx = x0 + pw / 2, sc = ph / 170, maxW = pw - 16;
+            var ph = H - 18, pw = Math.round(ph * 9 / 16), x0 = 10, y0 = 9, cx = x0 + pw / 2, sc = ph / 170, maxW = pw - 26;
             uiCard(g, x0, y0, pw, ph, 12, UI.screen, UI.line);
             uiRound(g, cx - 13, y0 + 6, 26, 5, 2.5, UI.line);
             // tamanho de cada linha, reduzido se nao couber na tela do celular
@@ -1152,6 +1153,10 @@
                 var wt = ramp(2, 16), wx = x0 + 4 + (pw - 8) * wt;
                 if (wt < 1) { uiRect(g, wx, y0 + 16, x0 + pw - 4 - wx, ph - 32, UI.screen); uiRect(g, wx, y0 + ph * 0.3, 2, ph * 0.4, UI.acc); }
             }
+            // corta o que passar da tela do celular (a fonte real pode ser mais larga que a estimativa)
+            uiRect(g, 1, y0 + 12, x0 - 1, ph - 24, UI.card);
+            uiRect(g, x0 + pw, 15, W - (x0 + pw) - 2, H - 30, UI.card);
+            uiDoodles(g, 0, 0, W, H, UI.line, 0);
             // coluna de texto
             var tx = x0 + pw + 14, ty = y0 + 3;
             if (st.isNew) { uiRound(g, tx, ty, 44, 16, 8, UI.acc); uiText(g, "NOVO", uiFont(10, true), UI.white, tx + 8, ty + 2); }
@@ -1279,6 +1284,7 @@
         try { if ($.global.__LKR_TASK) { app.cancelTask($.global.__LKR_TASK); } } catch (e1) {}
         $.global.__LKR_TICK = function () {
             try {
+                if (new Date().getTime() - lastScroll < 600) { return; }
                 frame++;
                 if (s3.open) { pv.notify("onDraw"); }
             } catch (e) { try { app.cancelTask($.global.__LKR_TASK); } catch (e2) {} }
