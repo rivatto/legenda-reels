@@ -1,5 +1,5 @@
 /*
-  Low-Key Reels (LegendaReels.jsx)  -  legendas de letra de musica sincronizadas, no estilo do projeto EXTRAREEL.
+  chavebaixa reels (LegendaReels.jsx)  -  legendas de letra de musica sincronizadas, no estilo do projeto EXTRAREEL.
 
   COMO USAR
     1. After Effects > Edit > Preferences > Scripting & Expressions >
@@ -20,8 +20,8 @@
 (function (thisObj) {
 
     var LG = {};
-    LG.NAME = "Low-Key Reels";
-    LG.VERSION = "1.4.1";
+    LG.NAME = "chavebaixa reels";
+    LG.VERSION = "1.5.0";
     // de onde o carregador baixa as atualizacoes (pasta "raw" do repositorio no GitHub, terminando em /)
     LG.UPDATE_URL = "https://raw.githubusercontent.com/rivatto/legenda-reels/main/";
     LG.PREFIX = "LG | ";
@@ -898,6 +898,30 @@
         win.orientation = "column"; win.alignChildren = ["fill", "top"]; win.spacing = 6; win.margins = 10;
         try { win.graphics.backgroundColor = uiBrush(win.graphics, UI.bg); } catch (e0) {}
 
+        // area rolavel (conteudo) + barra de rolagem a direita + rodape fixo
+        var body = win.add("group");
+        body.orientation = "row"; body.alignment = ["fill", "fill"]; body.alignChildren = ["fill", "fill"]; body.spacing = 4; body.margins = 0;
+        var holder = body.add("group");
+        holder.orientation = "column"; holder.alignment = ["fill", "fill"]; holder.alignChildren = ["fill", "top"]; holder.margins = 0;
+        var inner = holder.add("group");
+        inner.orientation = "column"; inner.alignment = ["fill", "top"]; inner.alignChildren = ["fill", "top"]; inner.spacing = 6; inner.margins = 0;
+        var sb = body.add("scrollbar", undefined, 0, 0, 100);
+        sb.preferredSize = [12, 60]; sb.alignment = ["right", "fill"];
+        try { sb.stepdelta = 30; sb.jumpdelta = 120; } catch (eS) {}
+        var foot = win.add("group");
+        foot.orientation = "column"; foot.alignment = ["fill", "bottom"]; foot.alignChildren = ["fill", "top"]; foot.spacing = 6; foot.margins = 0;
+        function syncScroll() {
+            try {
+                var over = inner.size.height - holder.size.height;
+                if (over > 2) {
+                    sb.visible = true; sb.maxvalue = over;
+                    if (sb.value > over) { sb.value = over; }
+                } else { sb.value = 0; sb.visible = false; }
+                inner.location.y = -Math.round(sb.value);
+            } catch (e) {}
+        }
+        sb.onChanging = sb.onChange = function () { try { inner.location.y = -Math.round(this.value); } catch (e) {} };
+
         var frame = 0, i;
         var cur = parseInt(loadSetting("cur", "0"), 10) || 0;
         if (cur < 0 || cur >= LG.STYLES.length) { cur = 0; }
@@ -906,13 +930,13 @@
         function onList() { var a = [], k; for (k = 0; k < LG.STYLES.length; k++) { if (on[LG.STYLES[k].id]) { a.push(LG.STYLES[k].id); } } return a; }
 
         // ---- topo (estilo janela de Mac)
-        var top = uiCustom(win, UI.W, 52, function (g, W, H) {
+        var top = uiCustom(inner, UI.W, 52, function (g, W, H) {
             uiCard(g, 0, 0, W, H, 12, UI.card, UI.line);
             uiDoodles(g, 0, 0, W, H, UI.line, 0);
             uiDot(g, 16, 13, 4.5, UI.dotR); uiDot(g, 30, 13, 4.5, UI.dotY); uiDot(g, 44, 13, 4.5, UI.dotG);
-            var f = uiFont(17, true), w1 = uiSize(g, "Low-Key", f).w;
-            uiText(g, "Low-Key", f, UI.txt, 14, 23);
-            uiText(g, "Reels", f, UI.acc, 14 + w1 + 6, 23);
+            var f = uiFont(17, true), w1 = uiSize(g, "chavebaixa", f).w;
+            uiText(g, "chavebaixa", f, UI.txt, 14, 23);
+            uiText(g, "reels", f, UI.acc, 14 + w1 + 6, 23);
             var fv = uiFont(10, true), vs = "v" + LG.VERSION;
             uiText(g, vs, fv, UI.dim, W - uiSize(g, vs, fv).w - 12, 7);
             // mini equalizador (parado)
@@ -923,7 +947,7 @@
 
         // ---- secoes recolhiveis
         var sections = [];
-        function relayout() { try { win.layout.layout(true); win.layout.resize(); } catch (e) {} }
+        function relayout() { try { win.layout.layout(true); win.layout.resize(); } catch (e) {} syncScroll(); }
         function setOpen(sec, open, quiet) {
             sec.open = open;
             sec.body.visible = open;
@@ -933,7 +957,7 @@
         }
         function section(num, title, defOpen) {
             var sec = { num: num, open: true };
-            sec.head = win.add("button", undefined, title);
+            sec.head = inner.add("button", undefined, title);
             sec.head.preferredSize = [UI.W, 26]; sec.head.alignment = ["fill", "top"];
             sec.head.onDraw = function (st) {
                 try {
@@ -946,7 +970,7 @@
                     uiTri(g, W - 16, H / 2, sec.open ? "d" : "l", 5, sec.open ? UI.acc : UI.dim);
                 } catch (e) {}
             };
-            sec.body = win.add("group");
+            sec.body = inner.add("group");
             sec.body.orientation = "column"; sec.body.alignChildren = ["fill", "top"]; sec.body.spacing = 6; sec.body.margins = [4, 2, 4, 4];
             sec.head.onClick = function () { setOpen(sec, !sec.open); };
             sec.defOpen = loadSetting("open" + num, defOpen ? "1" : "0") === "1";
@@ -1057,9 +1081,9 @@
         var eOff = g5.add("edittext", undefined, "0"); eOff.characters = 7;
 
         // ---- rodape (sempre visivel)
-        var cReplace = win.add("checkbox", undefined, "Substituir as legendas que ja gerei nesta comp");
+        var cReplace = foot.add("checkbox", undefined, "Substituir as legendas que ja gerei nesta comp");
         cReplace.value = true;
-        var g6 = win.add("group"); g6.spacing = 8;
+        var g6 = foot.add("group"); g6.spacing = 8;
         var bGo = uiButton(g6, "GERAR / ATUALIZAR", "primary", 222, 34);
         var bDel = uiButton(g6, "Remover geradas", "plain", 130, 34);
 
@@ -1122,7 +1146,7 @@
         try { $.global.__LKR_TASK = app.scheduleTask("$.global.__LKR_TICK()", 90, true); } catch (e3) {}
         win.onClose = function () { try { app.cancelTask($.global.__LKR_TASK); } catch (e) {} return true; };
 
-        win.onResizing = win.onResize = function () { this.layout.resize(); };
+        win.onResizing = win.onResize = function () { try { this.layout.resize(); } catch (e) {} syncScroll(); };
         win.layout.layout(true);
         for (i = 0; i < sections.length; i++) { if (!sections[i].defOpen) { setOpen(sections[i], false, true); } }
         relayout();
