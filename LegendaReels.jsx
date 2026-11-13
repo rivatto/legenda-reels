@@ -21,7 +21,7 @@
 
     var LG = {};
     LG.NAME = "chavebaixa reels";
-    LG.VERSION = "1.5.0";
+    LG.VERSION = "1.6.0";
     // de onde o carregador baixa as atualizacoes (pasta "raw" do repositorio no GitHub, terminando em /)
     LG.UPDATE_URL = "https://raw.githubusercontent.com/rivatto/legenda-reels/main/";
     LG.PREFIX = "LG | ";
@@ -83,6 +83,15 @@
     ];
     // estilos que entram na alternancia por padrao: os do EXTRAREEL
     LG.DEFAULT_ON = "stack,phrase,punch,wipe,burn,scramble";
+
+    // fontes do texto. ps = nome PostScript (o que o After usa); ui = familia (para desenhar a previa no painel);
+    // wf = largura em relacao a Arial Bold (so para centralizar a previa); file = como achar o arquivo no Windows
+    LG.FONTS = [
+        { id: "generic", name: "Generic G20",     ps: "GenericG20FRClassicDEMO", ui: "Generic G20 FR Classic DEMO", bold: false, wf: 0.9,  file: /generic.*g20|g20.*classic/i },
+        { id: "arial",   name: "Arial",           ps: "Arial-BoldMT",            ui: "Arial",                       bold: true,  wf: 1 },
+        { id: "times",   name: "Times New Roman", ps: "TimesNewRomanPSMT",       ui: "Times New Roman",             bold: false, wf: 0.84 },
+        { id: "gotham",  name: "Gotham Black",    ps: "Gotham-Black",            ui: "Gotham Black",                bold: false, wf: 1.14, file: /gotham.*black/i }
+    ];
 
     // ================================================================ logica pura (sem After Effects)
     LG.trim = function (s) { return String(s).replace(/^\s+|\s+$/g, ""); };
@@ -632,6 +641,7 @@
     LG.generate = function (lyricsText, sel, opt, offset) {
         var comp = app.project.activeItem;
         if (!(comp instanceof CompItem)) { alert("Abra a comp do reel antes de gerar."); return; }
+        if (opt && opt.font) { C.fontMain = opt.font; }
         // SRT colado direto na caixa: vira a fonte dos tempos (e do texto)
         if (/\d+:\d+:\d+[,.]\d+\s*-->/.test(lyricsText)) {
             var pasted = LG.parseSRT(lyricsText);
@@ -887,6 +897,32 @@
     }
     function saveSetting(name, val) { try { app.settings.saveSetting(LG.SETTINGS, name, String(val)); } catch (e) {} }
 
+    // fonte do After desenhada no painel (se a familia nao existir, o Windows usa uma parecida)
+    function uiFontOf(fo, size) {
+        try { return ScriptUI.newFont(fo.ui, fo.bold ? ScriptUI.FontStyle.BOLD : ScriptUI.FontStyle.REGULAR, size); }
+        catch (e) { return uiFont(size, true); }
+    }
+    // procura o arquivo da fonte nas pastas de fontes do Windows (so para avisar; nao bloqueia nada)
+    var fontSeen = {};
+    function fontOk(fo) {
+        if (!fo.file) { return true; }
+        if (fontSeen[fo.id] !== undefined) { return fontSeen[fo.id]; }
+        var ok = true;
+        try {
+            if ($.os.indexOf("Windows") >= 0) {
+                var dirs = [new Folder($.getenv("WINDIR") + "/Fonts"), new Folder($.getenv("LOCALAPPDATA") + "/Microsoft/Windows/Fonts")], d, i, files;
+                ok = false;
+                for (d = 0; d < dirs.length && !ok; d++) {
+                    if (!dirs[d].exists) { continue; }
+                    files = dirs[d].getFiles();
+                    for (i = 0; i < files.length; i++) { if (fo.file.test(decodeURI(files[i].name))) { ok = true; break; } }
+                }
+            }
+        } catch (e) { ok = true; }
+        fontSeen[fo.id] = ok;
+        return ok;
+    }
+
     function scrambleText(s, seed) {
         var pool = "X#%&$@07K?", out = "", i;
         for (i = 0; i < s.length; i++) { out += s.charAt(i) === " " ? " " : pool.charAt((seed * 7 + i * 13) % pool.length); }
@@ -925,6 +961,8 @@
         var frame = 0, i;
         var cur = parseInt(loadSetting("cur", "0"), 10) || 0;
         if (cur < 0 || cur >= LG.STYLES.length) { cur = 0; }
+        var fontIdx = parseInt(loadSetting("font", "0"), 10) || 0;
+        if (fontIdx < 0 || fontIdx >= LG.FONTS.length) { fontIdx = 0; }
         var on = {}, saved = loadSetting("on", LG.DEFAULT_ON).split(",");
         for (i = 0; i < saved.length; i++) { on[saved[i]] = true; }
         function onList() { var a = [], k; for (k = 0; k < LG.STYLES.length; k++) { if (on[LG.STYLES[k].id]) { a.push(LG.STYLES[k].id); } } return a; }
@@ -1011,9 +1049,9 @@
             uiCard(g, x0, y0, pw, ph, 12, UI.screen, UI.line);
             uiRound(g, cx - 13, y0 + 6, 26, 5, 2.5, UI.line);
             // tamanho de cada linha, reduzido se nao couber na tela do celular
-            var sizes = [], total = 0;
+            var sizes = [], total = 0, FO = LG.FONTS[fontIdx];
             for (k = 0; k < n; k++) {
-                var sz = st.pv[k][1] * sc, wd = uiWidth(st.pv[k][0], sz, true) + Math.abs(st.pv[k][3] * sc) * 2;
+                var sz = st.pv[k][1] * sc, wd = uiWidth(st.pv[k][0], sz, true) * FO.wf + Math.abs(st.pv[k][3] * sc) * 2;
                 if (wd > maxW) { sz = sz * maxW / wd; }
                 sizes[k] = Math.max(8, Math.floor(sz));
                 total += sizes[k] * 1.3;
@@ -1039,8 +1077,9 @@
                 }
                 if (a === "shake") { dx += ((frame * 7 + k * 3) % 5) - 2; dy += ((frame * 5 + k) % 3) - 1; }
                 if (al > 0.02 && text.length) {
-                    uiTextC(g, text, uiFont(size, true), uiMix(UI.screen, col, al), cx + dx, y + dy + (sizes[k] - size) / 2);
-                    if (cursor) { uiRect(g, cx + dx + uiWidth(text, size, true) / 2 + 2, y + 2, 2, size, UI.acc); }
+                    var tw = uiWidth(text, size, true) * FO.wf;
+                    uiText(g, text, uiFontOf(FO, size), uiMix(UI.screen, col, al), cx + dx - tw / 2, y + dy + (sizes[k] - size) / 2);
+                    if (cursor) { uiRect(g, cx + dx + tw / 2 + 2, y + 2, 2, size, UI.acc); }
                 }
                 y += sizes[k] * 1.3;
             }
@@ -1064,6 +1103,21 @@
             }
         });
         var bNext = uiButton(gc, ">", "next", 28, 56);
+
+        // ---- fonte (setas trocam; a palavra de exemplo mostra como fica)
+        var gf = b3.add("group"); gf.spacing = 6; gf.alignChildren = ["left", "center"];
+        var bFPrev = uiButton(gf, "<", "prev", 28, 40);
+        var fv = uiCustom(gf, UI.W - 76, 54, function (g, W, H) {
+            var fo = LG.FONTS[fontIdx], ok = fontOk(fo);
+            uiCard(g, 0, 0, W, H, 12, UI.card, UI.line);
+            uiText(g, "FONTE " + (fontIdx + 1) + "/" + LG.FONTS.length + (fontIdx === 0 ? "  (padrao)" : ""), uiFont(9, true), UI.dim, 12, 7);
+            uiText(g, fo.name, uiFont(13, true), UI.txt, 12, 20);
+            if (!ok) { uiText(g, "nao achei instalada neste PC", uiFont(9, true), UI.acc, 12, 38); }
+            var word = "chavebaixa", size = 21, w = uiWidth(word, size, true) * fo.wf;
+            if (w > W - 150) { size = Math.floor(size * (W - 150) / w); w = uiWidth(word, size, true) * fo.wf; }
+            uiText(g, word, uiFontOf(fo, size), ok ? UI.txt : UI.dim, W - 14 - w, (H - size * 1.2) / 2);
+        });
+        var bFNext = uiButton(gf, ">", "next", 28, 40);
 
         var cUse = b3.add("checkbox", undefined, "Usar este estilo na alternancia");
         var g3 = b3.add("group"); g3.spacing = 6;
@@ -1097,6 +1151,13 @@
             frame = 0;
             uiRedraw(pv);
         }
+        function showFont(n) {
+            fontIdx = (n + LG.FONTS.length) % LG.FONTS.length;
+            saveSetting("font", fontIdx);
+            uiRedraw(fv); uiRedraw(pv);
+        }
+        bFPrev.onClick = function () { showFont(fontIdx - 1); };
+        bFNext.onClick = function () { showFont(fontIdx + 1); };
         bPrev.onClick = function () { showStyle(cur - 1); };
         bNext.onClick = function () { showStyle(cur + 1); };
         cUse.onClick = function () {
@@ -1129,7 +1190,7 @@
             if (sel.mode !== "single" && !sel.list.length) { alert("Marque pelo menos um estilo em \"Usar este estilo na alternancia\"."); return; }
             var off = parseFloat(String(eOff.text).replace(",", ".")); if (isNaN(off)) { off = 0; }
             try {
-                LG.generate(eLyr.text, sel, { posterize: cPost.value, blur: cBlur.value, shadow: cShadow.value, zoom: cZoom.value, replace: cReplace.value }, off);
+                LG.generate(eLyr.text, sel, { posterize: cPost.value, blur: cBlur.value, shadow: cShadow.value, zoom: cZoom.value, replace: cReplace.value, font: LG.FONTS[fontIdx].ps }, off);
                 if (LG.state.words) { sStatus.text = LG.state.words.length + " palavras de " + LG.state.source; }
             } catch (e) { alert(e.toString()); }
         };
