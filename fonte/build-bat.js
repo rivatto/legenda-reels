@@ -11,7 +11,11 @@ const script = fs.readFileSync(path.join(dir, 'LegendaReels.jsx'), 'utf8');
 const ver = (/LG\.VERSION = "([^"]+)"/.exec(script) || [, '?'])[1];
 if (/[^\x00-\x7E]/.test(script)) throw new Error('LegendaReels.jsx precisa ser ASCII puro');
 
-const html = fs.readFileSync(path.join(dir, 'cep', 'index.html'), 'utf8').split('__VERSION__').join(ver);
+// a imagem de fundo vai embutida no proprio index.html (um arquivo so para instalar e atualizar)
+const bgFile = path.join(dir, 'cep', 'bg.webp');
+const bgData = fs.existsSync(bgFile) ? 'data:image/webp;base64,' + fs.readFileSync(bgFile).toString('base64') : 'data:,';
+const html = fs.readFileSync(path.join(dir, 'cep', 'index.html'), 'utf8').split('__VERSION__').join(ver).split('__BG_DATA__').join(bgData);
+if (process.argv[2] === '--preview') { fs.writeFileSync(process.argv[3], html, 'utf8'); console.log('preview', html.length); process.exit(0); }
 if (html.indexOf('chavebaixa-reels-panel v' + ver + ' ') < 0) throw new Error('marcador de versao ausente no index.html');
 const host = '$.global.__LG_HEADLESS = true;\n' + script;
 const manifest = fs.readFileSync(path.join(dir, 'cep', 'manifest.xml'), 'utf8');
