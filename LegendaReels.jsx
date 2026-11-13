@@ -21,7 +21,7 @@
 
     var LG = {};
     LG.NAME = "chavebaixa reels";
-    LG.VERSION = "1.6.0";
+    LG.VERSION = "1.6.1";
     // de onde o carregador baixa as atualizacoes (pasta "raw" do repositorio no GitHub, terminando em /)
     LG.UPDATE_URL = "https://raw.githubusercontent.com/rivatto/legenda-reels/main/";
     LG.PREFIX = "LG | ";
@@ -770,7 +770,7 @@
 
     // ---------------------------------------------------------------- interface
     var UI = {
-        W: 360,
+        W: 330,
         bg:     [0.1, 0.1, 0.11, 1],
         card:   [0.16, 0.16, 0.175, 1],
         cardHi: [0.215, 0.215, 0.235, 1],
@@ -934,18 +934,20 @@
         win.orientation = "column"; win.alignChildren = ["fill", "top"]; win.spacing = 6; win.margins = 10;
         try { win.graphics.backgroundColor = uiBrush(win.graphics, UI.bg); } catch (e0) {}
 
-        // area rolavel (conteudo) + barra de rolagem a direita + rodape fixo
-        var body = win.add("group");
-        body.orientation = "row"; body.alignment = ["fill", "fill"]; body.alignChildren = ["fill", "fill"]; body.spacing = 4; body.margins = 0;
-        var holder = body.add("group");
-        holder.orientation = "column"; holder.alignment = ["fill", "fill"]; holder.alignChildren = ["fill", "top"]; holder.margins = 0;
+        // area rolavel (conteudo) + barra de rolagem a direita + rodape fixo.
+        // O layout automatico so calcula os tamanhos; quem posiciona esses tres blocos e a funcao fit(),
+        // a partir do tamanho real do painel, para a barra nunca ficar fora da area visivel.
+        var isPanel = (host instanceof Panel), real = null;
+        try { if (isPanel && win.size && win.size.width > 60 && win.size.height > 60) { real = { w: win.size.width, h: win.size.height }; } } catch (eR) {}
+        var holder = win.add("group");
+        holder.orientation = "column"; holder.alignChildren = ["fill", "top"]; holder.margins = 0;
         var inner = holder.add("group");
         inner.orientation = "column"; inner.alignment = ["fill", "top"]; inner.alignChildren = ["fill", "top"]; inner.spacing = 6; inner.margins = 0;
-        var sb = body.add("scrollbar", undefined, 0, 0, 100);
-        sb.preferredSize = [12, 60]; sb.alignment = ["right", "fill"];
+        var sb = win.add("scrollbar", undefined, 0, 0, 100);
+        sb.preferredSize = [UI.W + 16, 4];
         try { sb.stepdelta = 30; sb.jumpdelta = 120; } catch (eS) {}
         var foot = win.add("group");
-        foot.orientation = "column"; foot.alignment = ["fill", "bottom"]; foot.alignChildren = ["fill", "top"]; foot.spacing = 6; foot.margins = 0;
+        foot.orientation = "column"; foot.alignChildren = ["fill", "top"]; foot.spacing = 6; foot.margins = 0;
         function syncScroll() {
             try {
                 var over = inner.size.height - holder.size.height;
@@ -953,10 +955,24 @@
                     sb.visible = true; sb.maxvalue = over;
                     if (sb.value > over) { sb.value = over; }
                 } else { sb.value = 0; sb.visible = false; }
-                inner.location.y = -Math.round(sb.value);
+                inner.location = [0, -Math.round(sb.value)];
             } catch (e) {}
         }
-        sb.onChanging = sb.onChange = function () { try { inner.location.y = -Math.round(this.value); } catch (e) {} };
+        function fit() {
+            try {
+                if (!real) { real = { w: win.size.width, h: win.size.height }; }
+                var m = 10, gap = 6, sbw = 12, W = real.w, H = real.h, fh = foot.size.height;
+                var hh = Math.max(40, H - 2 * m - fh - gap), hw = Math.max(120, W - 2 * m - sbw - 4);
+                holder.location = [m, m]; holder.size = [hw, hh];
+                sb.location = [m + hw + 4, m]; sb.size = [sbw, hh];
+                foot.location = [m, m + hh + gap]; foot.size = [Math.max(120, W - 2 * m), fh];
+                // o conteudo acompanha a largura do painel
+                try { inner.size = [hw, inner.size.height]; inner.layout.resize(); } catch (e1) {}
+                try { foot.layout.resize(); } catch (e2) {}
+            } catch (e) {}
+            syncScroll();
+        }
+        sb.onChanging = sb.onChange = function () { try { inner.location = [0, -Math.round(this.value)]; } catch (e) {} };
 
         var frame = 0, i;
         var cur = parseInt(loadSetting("cur", "0"), 10) || 0;
@@ -981,11 +997,17 @@
             var k, hs = [7, 13, 9, 15, 6];
             for (k = 0; k < 5; k++) { uiRound(g, W - 46 + k * 7, 44 - hs[k], 4, hs[k], 2, UI.acc); }
         });
-        top.alignment = ["fill", "top"];
+        top.alignment = ["fill", "top"]; top.minimumSize = [140, 52];
 
         // ---- secoes recolhiveis
         var sections = [];
-        function relayout() { try { win.layout.layout(true); win.layout.resize(); } catch (e) {} syncScroll(); }
+        function relayout() {
+            try { win.layout.layout(true); } catch (e) {}
+            // num painel preso quem manda no tamanho e o After: devolve o tamanho real depois do calculo
+            if (isPanel && real) { try { win.size = [real.w, real.h]; } catch (e2) {} }
+            else { try { real = { w: win.size.width, h: win.size.height }; } catch (e3) {} }
+            fit();
+        }
         function setOpen(sec, open, quiet) {
             sec.open = open;
             sec.body.visible = open;
@@ -1019,15 +1041,16 @@
         // ---- 1. tempo
         var s1 = section(1, "Tempo das palavras", true), b1 = s1.body;
         var g1 = b1.add("group"); g1.spacing = 8;
-        var bImport = uiButton(g1, "Importar JSON / SRT", "plain", 170);
-        var bScribe = uiButton(g1, "Transcrever (ElevenLabs)", "plain", 170);
+        var bImport = uiButton(g1, "Importar JSON / SRT", "plain", 156);
+        var bScribe = uiButton(g1, "Transcrever (ElevenLabs)", "plain", 156);
+        bImport.alignment = ["fill", "center"]; bScribe.alignment = ["fill", "center"];
         var g2 = b1.add("group"); g2.spacing = 6;
         uiLabel(g2, "API do ElevenLabs:");
-        var eKey = g2.add("edittext", undefined, "", { noecho: true }); eKey.characters = 14;
+        var eKey = g2.add("edittext", undefined, "", { noecho: true }); eKey.characters = 11;
         uiLabel(g2, "Modelo:");
-        var eModel = g2.add("edittext", undefined, "scribe_v2"); eModel.characters = 8;
+        var eModel = g2.add("edittext", undefined, "scribe_v2"); eModel.characters = 7;
         var cKeep = b1.add("checkbox", undefined, "Lembrar a API neste computador");
-        var sStatus = uiLabel(b1, "Nenhuma transcricao carregada."); sStatus.characters = 44;
+        var sStatus = uiLabel(b1, "Nenhuma transcricao carregada."); sStatus.characters = 38;
 
         // ---- 2. texto
         var s2 = section(2, "SRT ou letra (uma frase por linha)", true), b2 = s2.body;
@@ -1102,6 +1125,7 @@
                 else { uiDot(g, tx + k * 10 + 4, H - 19, 2.5, on[LG.STYLES[k].id] ? UI.txt : UI.line); }
             }
         });
+        pv.alignment = ["fill", "center"]; pv.minimumSize = [150, 214];
         var bNext = uiButton(gc, ">", "next", 28, 56);
 
         // ---- fonte (setas trocam; a palavra de exemplo mostra como fica)
@@ -1117,6 +1141,7 @@
             if (w > W - 150) { size = Math.floor(size * (W - 150) / w); w = uiWidth(word, size, true) * fo.wf; }
             uiText(g, word, uiFontOf(fo, size), ok ? UI.txt : UI.dim, W - 14 - w, (H - size * 1.2) / 2);
         });
+        fv.alignment = ["fill", "center"]; fv.minimumSize = [150, 54];
         var bFNext = uiButton(gf, ">", "next", 28, 40);
 
         var cUse = b3.add("checkbox", undefined, "Usar este estilo na alternancia");
@@ -1124,9 +1149,9 @@
         uiLabel(g3, "Modo:");
         var dMode = g3.add("dropdownlist", undefined, ["Alternar entre os marcados", "Aleatorio entre os marcados", "So o estilo mostrado acima"]);
         dMode.selection = parseInt(loadSetting("mode", "0"), 10) || 0;
-        dMode.preferredSize = [240, 24];
+        dMode.preferredSize = [230, 24];
         var g4 = b3.add("group"); g4.spacing = 10;
-        var cPost = g4.add("checkbox", undefined, "12 fps"); cPost.value = true;
+        var cPost = g4.add("checkbox", undefined, "12 fps"); cPost.value = true; g4.spacing = 6;
         var cBlur = g4.add("checkbox", undefined, "Lens blur"); cBlur.value = true;
         var cShadow = g4.add("checkbox", undefined, "Sombra"); cShadow.value = false;
         var cZoom = g4.add("checkbox", undefined, "Zoom lento"); cZoom.value = true;
@@ -1135,11 +1160,18 @@
         var eOff = g5.add("edittext", undefined, "0"); eOff.characters = 7;
 
         // ---- rodape (sempre visivel)
+        var divider = uiCustom(foot, UI.W, 12, function (g, W, H) {
+            uiRound(g, 0, 2, W, 8, 4, UI.line);
+            uiRound(g, 1, 3, W - 2, 6, 3, [0, 0, 0, 1]);
+            uiDot(g, W / 2 - 8, 6, 1.5, UI.dim); uiDot(g, W / 2, 6, 1.5, UI.dim); uiDot(g, W / 2 + 8, 6, 1.5, UI.dim);
+        });
+        divider.alignment = ["fill", "top"]; divider.minimumSize = [100, 12];
         var cReplace = foot.add("checkbox", undefined, "Substituir as legendas que ja gerei nesta comp");
         cReplace.value = true;
         var g6 = foot.add("group"); g6.spacing = 8;
-        var bGo = uiButton(g6, "GERAR / ATUALIZAR", "primary", 222, 34);
-        var bDel = uiButton(g6, "Remover geradas", "plain", 130, 34);
+        var bGo = uiButton(g6, "GERAR / ATUALIZAR", "primary", 196, 34);
+        var bDel = uiButton(g6, "Remover geradas", "plain", 124, 34);
+        bGo.alignment = ["fill", "center"];
 
         eKey.text = loadSetting("key", ""); cKeep.value = eKey.text !== "";
         eModel.text = loadSetting("model", "scribe_v2");
@@ -1207,8 +1239,10 @@
         try { $.global.__LKR_TASK = app.scheduleTask("$.global.__LKR_TICK()", 90, true); } catch (e3) {}
         win.onClose = function () { try { app.cancelTask($.global.__LKR_TASK); } catch (e) {} return true; };
 
-        win.onResizing = win.onResize = function () { try { this.layout.resize(); } catch (e) {} syncScroll(); };
-        win.layout.layout(true);
+        win.onResizing = win.onResize = function () {
+            try { if (this.size.width > 60 && this.size.height > 60) { real = { w: this.size.width, h: this.size.height }; } } catch (e) {}
+            fit();
+        };
         for (i = 0; i < sections.length; i++) { if (!sections[i].defOpen) { setOpen(sections[i], false, true); } }
         relayout();
         if (win instanceof Window) { win.center(); win.show(); }
