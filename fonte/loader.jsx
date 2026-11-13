@@ -1,5 +1,5 @@
 /*
-  Carregador do Legenda Reels (fica em "Scripts/ScriptUI Panels").
+  Carregador do chavebaixa reels (fica em "Scripts/ScriptUI Panels").
   1. Confere no GitHub se existe versao mais nova e, se existir, baixa.
   2. Abre o script que mora em  %APPDATA%\LegendaReels\LegendaReels.jsx
   O endereco do GitHub vem da linha LG.UPDATE_URL do proprio script.
@@ -55,11 +55,11 @@
     try { update(); } catch (e0) {}
 
     if (!f.exists) {
-        alert("Legenda Reels: nao achei o script em\n" + f.fsName + "\n\nRode o Instalar-LegendaReels.bat de novo.");
+        alert("chavebaixa reels: nao achei o script em\n" + f.fsName + "\n\nRode o Instalar-chavebaixa-reels.bat de novo.");
         return;
     }
     $.global.__LG_HOST = thisObj;
     try { $.evalFile(f); }
-    catch (e) { alert("Legenda Reels: erro ao abrir o script.\n" + e.toString() + (e.line ? "\nLinha " + e.line : "")); }
+    catch (e) { alert("chavebaixa reels: erro ao abrir o script.\n" + e.toString() + (e.line ? "\nLinha " + e.line : "")); }
     $.global.__LG_HOST = null;
 })(this);
