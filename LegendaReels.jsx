@@ -21,7 +21,7 @@
 
     var LG = {};
     LG.NAME = "Legenda Reels";
-    LG.VERSION = "1.3.0";
+    LG.VERSION = "1.3.1";
     // de onde o carregador baixa as atualizacoes (pasta "raw" do repositorio no GitHub, terminando em /)
     LG.UPDATE_URL = "https://raw.githubusercontent.com/rivatto/legenda-reels/main/";
     LG.PREFIX = "LG | ";
