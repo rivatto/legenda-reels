@@ -21,7 +21,7 @@
 
     var LG = {};
     LG.NAME = "chavebaixa reels";
-    LG.VERSION = "1.6.3";
+    LG.VERSION = "2.0.0";
     // de onde o carregador baixa as atualizacoes (pasta "raw" do repositorio no GitHub, terminando em /)
     LG.UPDATE_URL = "https://raw.githubusercontent.com/rivatto/legenda-reels/main/";
     LG.PREFIX = "LG | ";
@@ -640,7 +640,7 @@
 
     LG.generate = function (lyricsText, sel, opt, offset) {
         var comp = app.project.activeItem;
-        if (!(comp instanceof CompItem)) { alert("Abra a comp do reel antes de gerar."); return; }
+        if (!(comp instanceof CompItem)) { say("Abra a comp do reel antes de gerar."); return; }
         if (opt && opt.font) { C.fontMain = opt.font; }
         // SRT colado direto na caixa: vira a fonte dos tempos (e do texto)
         if (/\d+:\d+:\d+[,.]\d+\s*-->/.test(lyricsText)) {
@@ -659,7 +659,7 @@
             phrases = LG.spreadLyrics(lines, comp.workAreaStart, comp.workAreaStart + comp.workAreaDuration);
             offset = 0;
             info = "Sem transcricao: espalhei a letra por igual na work area (ajuste na mao).";
-        } else { alert("Importe/transcreva o audio ou cole a letra primeiro."); return; }
+        } else { say("Importe/transcreva o audio ou cole a letra primeiro."); return; }
 
         var cuts = getCuts(comp), rnd = LG.rng(phrases.length * 7 + 3), made = 0, fails = [], i, j, n = 0;
         var removed = 0;
@@ -688,7 +688,7 @@
         } finally { app.endUndoGroup(); }
         var msg = made + " legendas criadas em \"" + comp.name + "\"" + (removed ? " (" + removed + " antigas substituidas)" : "") + ".\n" + info;
         if (fails.length) { msg += "\n\nFalharam " + fails.length + ":\n" + fails.slice(0, 6).join("\n"); }
-        alert(msg);
+        say(msg);
     };
 
     // apaga so as camadas que este script criou (nome comeca com "LG | ")
@@ -707,7 +707,7 @@
         app.beginUndoGroup(LG.NAME + " - remover");
         n = removeLayers(comp);
         app.endUndoGroup();
-        alert(n + " camadas de legenda removidas (Ctrl+Z desfaz).");
+        say(n + " camadas de legenda removidas (Ctrl+Z desfaz).");
     };
 
     // ---------------------------------------------------------------- arquivos / ElevenLabs
@@ -808,6 +808,104 @@
         target.copy(dirU + "/LegendaReels.anterior.jsx");
         nf.copy(target.fsName); nf.remove();
         return "v" + remote + " baixada (voce estava na v" + LG.VERSION + ").\n\nFeche este painel e abra de novo em Window para ver a versao nova.";
+    };
+
+    // ---------------------------------------------------------------- ponte com o painel HTML (CEP)
+    // No painel HTML este arquivo roda "sem interface": o painel chama LG.api(comando, json) e recebe json.
+    LG.msgs = [];
+    function say(m) { if ($.global.__LG_HEADLESS) { LG.msgs.push(String(m)); } else { alert(m); } }
+
+    LG.setTranscript = function (text, name) {
+        var s = String(text), words;
+        if (s.charCodeAt(0) === 0xFEFF) { s = s.substr(1); }
+        if (/^\s*[\[{]/.test(s)) { words = LG.wordsFromData(LG.parseJSON(s)); } else { words = LG.parseSRT(s); }
+        if (!words.length) { throw new Error("Nenhuma palavra com tempo nesse arquivo."); }
+        LG.state.words = words; LG.state.source = name || "arquivo";
+        return words.length;
+    };
+
+    LG.toJSON = function (v) {
+        var t = typeof v, i, a = [], k;
+        if (v === null || v === undefined) { return "null"; }
+        if (t === "number") { return isFinite(v) ? String(v) : "null"; }
+        if (t === "boolean") { return v ? "true" : "false"; }
+        if (t === "string") {
+            var out = '"', c, code;
+            for (i = 0; i < v.length; i++) {
+                c = v.charAt(i); code = v.charCodeAt(i);
+                if (c === '"') { out += '\\"'; } else if (c === "\\") { out += "\\\\"; }
+                else if (c === "\n") { out += "\\n"; } else if (c === "\r") { out += "\\r"; } else if (c === "\t") { out += "\\t"; }
+                else if (code < 32 || code > 126) { out += "\\u" + ("0000" + code.toString(16)).slice(-4); }
+                else { out += c; }
+            }
+            return out + '"';
+        }
+        if (v instanceof Array) { for (i = 0; i < v.length; i++) { a.push(LG.toJSON(v[i])); } return "[" + a.join(",") + "]"; }
+        for (k in v) { if (v.hasOwnProperty(k)) { a.push(LG.toJSON(String(k)) + ":" + LG.toJSON(v[k])); } }
+        return "{" + a.join(",") + "}";
+    };
+
+    LG.api = function (cmd, json) {
+        var out = { ok: true }, a;
+        LG.msgs = [];
+        try {
+            a = json ? LG.parseJSON(String(json)) : {};
+            if (cmd === "ping") {
+                out.version = LG.VERSION;
+                out.comp = (app.project && app.project.activeItem instanceof CompItem) ? app.project.activeItem.name : "";
+                out.words = LG.state.words ? LG.state.words.length : 0;
+                out.source = LG.state.source;
+            } else if (cmd === "transcript") {
+                out.count = LG.setTranscript(a.text, a.name);
+                out.source = LG.state.source;
+            } else if (cmd === "generate") {
+                LG.generate(a.text || "", a.sel, a.opt, Number(a.offset) || 0);
+                out.words = LG.state.words ? LG.state.words.length : 0;
+                out.source = LG.state.source;
+            } else if (cmd === "remove") {
+                LG.removeGenerated();
+            } else if (cmd === "transcribe") {
+                var r = LG.transcribe(LG.trim(a.key || ""), LG.trim(a.model || "scribe_v2"));
+                out.count = r.count; out.offset = r.offset; out.text = r.text; out.source = LG.state.source;
+            } else { throw new Error("Comando desconhecido: " + cmd); }
+            out.msg = LG.msgs.join("\n");
+        } catch (e) {
+            out.ok = false;
+            out.msg = String(e && e.message ? e.message : e);
+        }
+        return LG.toJSON(out);
+    };
+
+    // instala o painel HTML a partir do painel antigo (um clique; sem administrador)
+    LG.CEP_ID = "com.chavebaixa.reels";
+    LG.installCep = function () {
+        if (!LG.UPDATE_URL) { return "Esta copia nao tem endereco de atualizacao."; }
+        var prefOn = false;
+        try { prefOn = app.preferences.getPrefAsLong("Main Pref Section", "Pref_SCRIPTING_FILE_NETWORK_SECURITY") === 1; } catch (e0) {}
+        if (!prefOn) {
+            return "Antes, marque em Edit > Preferences > Scripting & Expressions:\n\"Allow Scripts to Write Files and Access Network\"\n\nDepois clique de novo.";
+        }
+        var base = Folder.userData.fsName + "/Adobe/CEP/extensions/" + LG.CEP_ID;
+        var fd = new Folder(base + "/CSXS");
+        if (!fd.exists && !fd.create()) { return "Nao consegui criar a pasta:\n" + fd.fsName; }
+        var stamp = "?t=" + new Date().getTime();
+        var items = [["cep/index.html", base + "/index.html", "chavebaixa-reels-panel"],
+                     ["cep/host.jsx", base + "/host.jsx", "__LG_HEADLESS"],
+                     ["cep/manifest.xml", base + "/CSXS/manifest.xml", LG.CEP_ID]], i;
+        for (i = 0; i < items.length; i++) {
+            var tmp = new File(items[i][1] + ".baixando"), dst = new File(items[i][1]);
+            if (!fetchUrl(LG.UPDATE_URL + items[i][0] + stamp, tmp)) { return "Nao consegui baixar " + items[i][0] + " do GitHub.\nConfira a internet e tente de novo."; }
+            if (readFile(tmp).indexOf(items[i][2]) < 0) { tmp.remove(); return "O arquivo " + items[i][0] + " veio incompleto. Tente de novo em alguns minutos."; }
+            if (dst.exists) { dst.remove(); }
+            tmp.copy(dst.fsName); tmp.remove();
+        }
+        // paineis nao assinados pela Adobe so abrem com esta opcao ligada (por usuario, sem administrador)
+        var n;
+        for (n = 8; n <= 16; n++) {
+            if ($.os.indexOf("Windows") >= 0) { system.callSystem('reg add "HKCU\\Software\\Adobe\\CSXS.' + n + '" /v PlayerDebugMode /t REG_SZ /d 1 /f'); }
+            else { system.callSystem("defaults write com.adobe.CSXS." + n + " PlayerDebugMode 1"); }
+        }
+        return "Painel novo instalado.\n\n1. Feche o After Effects e abra de novo.\n2. Abra em Window > Extensions > chavebaixa reels.\n\nEste painel antigo continua funcionando; pode fechar quando o novo abrir.";
     };
 
     // ---------------------------------------------------------------- interface
@@ -1041,6 +1139,16 @@
             for (k = 0; k < 5; k++) { uiRound(g, W - 46 + k * 7, 44 - hs[k], 4, hs[k], 2, UI.acc); }
         });
         top.alignment = ["fill", "top"]; top.minimumSize = [140, 52];
+
+        // ---- convite para o painel novo (HTML)
+        var bNew = uiButton(inner, "INSTALAR O PAINEL NOVO  (liso, com rodinha do mouse)", "primary", UI.W, 30);
+        bNew.alignment = ["fill", "top"];
+        bNew.onClick = function () {
+            try {
+                if (!confirm("Instalar o painel novo do chavebaixa reels?\n\nEle baixa 3 arquivos do GitHub para a pasta de extensoes do After e liga a opcao de desenvolvedor de paineis (PlayerDebugMode) no seu usuario do Windows. Nao pede administrador.")) { return; }
+                alert(LG.installCep());
+            } catch (e) { alert(e.toString()); }
+        };
 
         // ---- secoes recolhiveis
         var sections = [];
@@ -1302,6 +1410,7 @@
         return win;
     }
 
+    if ($.global.__LG_HEADLESS) { $.global.LG = LG; return; }
     buildUI(thisObj);
 
 // quando aberto pelo carregador (ScriptUI Panels), o painel do After vem em $.global.__LG_HOST
