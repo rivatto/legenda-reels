@@ -12,7 +12,7 @@ try { gh(['auth', 'status']); } catch (e) { console.error('GitHub CLI sem login.
 
 cp.execFileSync(process.execPath, [path.join(dir, 'build-bat.js')], { stdio: 'inherit' });
 const ver = fs.readFileSync(path.join(ghDir, 'version.txt'), 'utf8').trim();
-const msg = process.argv[2] || ('Legenda Reels v' + ver);
+const msg = process.argv[2] || ('chavebaixa reels v' + ver);
 
 function blobSha(buf) { return crypto.createHash('sha1').update('blob ' + buf.length + '\0').update(buf).digest('hex'); }
 function remoteSha(name) {
@@ -20,7 +20,7 @@ function remoteSha(name) {
 }
 // version.txt por ultimo: ninguem ve o numero novo antes de o script novo estar la
 let sent = 0;
-for (const name of ['LegendaReels.jsx', 'Instalar-LegendaReels.bat', 'version.txt']) {
+for (const name of ['LegendaReels.jsx', 'Instalar-chavebaixa-reels.bat', 'version.txt']) {
   const buf = fs.readFileSync(path.join(ghDir, name)), sha = remoteSha(name);
   if (sha === blobSha(buf)) { console.log('igual, pulei: ' + name); continue; }
   const body = { message: msg, content: buf.toString('base64'), branch: BRANCH };
