@@ -1,4 +1,4 @@
-// Gera o Instalar-LegendaReels.bat (arquivo unico, com o script e o carregador embutidos em base64).
+// Gera o Instalar-chavebaixa-reels.bat (arquivo unico, com o script e o carregador embutidos em base64).
 // Uso:  node fonte/build-bat.js
 const fs = require('fs'), path = require('path');
 const dir = __dirname;
@@ -10,13 +10,13 @@ const b64 = b => b.toString('base64').replace(/(.{76})/g, '$1\r\n').replace(/\r\
 const head = [
   '@echo off',
   'setlocal',
-  'title Legenda Reels ' + ver + ' - instalar / atualizar',
+  'title chavebaixa reels ' + ver + ' - instalar / atualizar',
   'set "SELF=%~f0"',
   'set "DEST=%APPDATA%\\LegendaReels"',
   'if not "%~1"=="" set "DEST=%~1"',
   'set "OUT_SCRIPT=%DEST%\\LegendaReels.jsx"',
   'set "OUT_LOADER=%DEST%\\loader.jsx"',
-  'echo Legenda Reels ' + ver,
+  'echo chavebaixa reels ' + ver,
   'echo.',
   '',
   'rem 1) extrai o script e o carregador que estao embutidos no fim deste arquivo',
@@ -32,7 +32,9 @@ const head = [
   'for /d %%D in ("%ProgramFiles%\\Adobe\\Adobe After Effects*") do (',
   '  if exist "%%D\\Support Files\\Scripts\\ScriptUI Panels" (',
   '    set FOUND=1',
-  '    fc /b "%OUT_LOADER%" "%%D\\Support Files\\Scripts\\ScriptUI Panels\\LegendaReels.jsx" >nul 2>&1 || set NEED=1',
+  '    fc /b "%OUT_LOADER%" "%%D\\Support Files\\Scripts\\ScriptUI Panels\\chavebaixa reels.jsx" >nul 2>&1 || set NEED=1',
+  '    if exist "%%D\\Support Files\\Scripts\\ScriptUI Panels\\Low-Key Reels.jsx" set NEED=1',
+  '    if exist "%%D\\Support Files\\Scripts\\ScriptUI Panels\\LegendaReels.jsx" set NEED=1',
   '  )',
   ')',
   'if "%FOUND%"=="0" echo Nao achei nenhum After Effects em %ProgramFiles%\\Adobe & goto done',
@@ -47,13 +49,15 @@ const head = [
   ':admin',
   'for /d %%D in ("%ProgramFiles%\\Adobe\\Adobe After Effects*") do (',
   '  if exist "%%D\\Support Files\\Scripts\\ScriptUI Panels" (',
-  '    copy /Y "%OUT_LOADER%" "%%D\\Support Files\\Scripts\\ScriptUI Panels\\LegendaReels.jsx" >nul && echo Painel instalado em %%~nxD',
+  '    if exist "%%D\\Support Files\\Scripts\\ScriptUI Panels\\LegendaReels.jsx" del /q "%%D\\Support Files\\Scripts\\ScriptUI Panels\\LegendaReels.jsx"',
+  '    if exist "%%D\\Support Files\\Scripts\\ScriptUI Panels\\Low-Key Reels.jsx" del /q "%%D\\Support Files\\Scripts\\ScriptUI Panels\\Low-Key Reels.jsx"',
+  '    copy /Y "%OUT_LOADER%" "%%D\\Support Files\\Scripts\\ScriptUI Panels\\chavebaixa reels.jsx" >nul && echo Painel instalado em %%~nxD',
   '  )',
   ')',
   '',
   ':done',
   'echo.',
-  'echo Pronto. No After: feche e reabra o painel em Window ^> LegendaReels.jsx',
+  'echo Pronto. No After: abra o painel em Window ^> chavebaixa reels.jsx',
   'echo.',
   'pause',
   'exit /b 0',
@@ -68,7 +72,7 @@ const head = [
 
 const out = head + '::#SCRIPT#\r\n' + b64(script) + '\r\n::#LOADER#\r\n' + b64(loader) + '\r\n';
 if (/[^\x00-\x7E]/.test(out)) throw new Error('non-ASCII in bat');
-const dest = path.join(dir, '..', 'Instalar-LegendaReels.bat');
+const dest = path.join(dir, '..', 'Instalar-chavebaixa-reels.bat');
 fs.writeFileSync(dest, out, 'latin1');
 console.log('ok', dest, 'v' + ver, out.length + ' bytes');
 
@@ -77,6 +81,6 @@ const gh = path.join(dir, '..', 'github');
 if (!fs.existsSync(gh)) fs.mkdirSync(gh);
 fs.writeFileSync(path.join(gh, 'LegendaReels.jsx'), script);
 fs.writeFileSync(path.join(gh, 'version.txt'), ver + '\n');
-fs.writeFileSync(path.join(gh, 'Instalar-LegendaReels.bat'), out, 'latin1');
+fs.writeFileSync(path.join(gh, 'Instalar-chavebaixa-reels.bat'), out, 'latin1');
 const url = (/LG\.UPDATE_URL = "([^"]*)"/.exec(script.toString('utf8')) || [, ''])[1];
 console.log('github/ pronto. UPDATE_URL =', url || '(vazio: auto-atualizacao desligada)');
