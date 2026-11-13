@@ -21,7 +21,7 @@
 
     var LG = {};
     LG.NAME = "Low-Key Reels";
-    LG.VERSION = "1.4.0";
+    LG.VERSION = "1.4.1";
     // de onde o carregador baixa as atualizacoes (pasta "raw" do repositorio no GitHub, terminando em /)
     LG.UPDATE_URL = "https://raw.githubusercontent.com/rivatto/legenda-reels/main/";
     LG.PREFIX = "LG | ";
@@ -779,9 +779,12 @@
     function uiBrush(g, c) { return g.newBrush(g.BrushType.SOLID_COLOR, c); }
     function uiPen(g, c, w) { return g.newPen(g.PenType.SOLID_COLOR, c, w || 1); }
     function uiFont(size, bold) {
-        try { return ScriptUI.newFont("Arial", bold ? ScriptUI.FontStyle.BOLD : ScriptUI.FontStyle.REGULAR, size); }
-        catch (e) { return ScriptUI.newFont("dialog", ScriptUI.FontStyle.REGULAR, size); }
+        var f;
+        try { f = ScriptUI.newFont("Arial", bold ? ScriptUI.FontStyle.BOLD : ScriptUI.FontStyle.REGULAR, size); }
+        catch (e) { f = ScriptUI.newFont("dialog", ScriptUI.FontStyle.REGULAR, size); }
+        return f;
     }
+    function uiBold(f) { try { return String(f.style).toLowerCase().indexOf("bold") >= 0 || f.style === ScriptUI.FontStyle.BOLD; } catch (e) { return true; } }
     function uiRect(g, x, y, w, h, c) { g.newPath(); g.rectPath(x, y, w, h); g.fillPath(uiBrush(g, c)); }
     function uiDot(g, cx, cy, r, c) { g.newPath(); g.ellipsePath(cx - r, cy - r, r * 2, r * 2); g.fillPath(uiBrush(g, c)); }
     // retangulo de cantos arredondados (2 retangulos + 4 circulos)
@@ -797,9 +800,27 @@
         if (border) { uiRound(g, x, y, w, h, r, border); uiRound(g, x + 1, y + 1, w - 2, h - 2, r - 1, fill); }
         else { uiRound(g, x, y, w, h, r, fill); }
     }
+    // Largura do texto calculada aqui mesmo: o measureString do After ignora a fonte pedida
+    // e devolvia larguras menores que o texto desenhado (titulo sobreposto, previa descentralizada).
+    function uiWidth(s, size, bold) {
+        var w = 0, i, ch;
+        s = String(s);
+        for (i = 0; i < s.length; i++) {
+            ch = s.charAt(i);
+            if (ch === " ") { w += 0.28; }
+            else if ("iljI.,:;'!|".indexOf(ch) >= 0) { w += 0.3; }
+            else if ("ftr-/()".indexOf(ch) >= 0) { w += 0.36; }
+            else if ("mw".indexOf(ch) >= 0) { w += 0.86; }
+            else if ("MW".indexOf(ch) >= 0) { w += 0.9; }
+            else if (ch >= "A" && ch <= "Z") { w += 0.7; }
+            else if (ch >= "0" && ch <= "9") { w += 0.56; }
+            else { w += 0.58; }
+        }
+        return w * size * (bold ? 0.93 : 0.87);
+    }
     function uiSize(g, s, f) {
-        var m = g.measureString(s, f);
-        return { w: m.width !== undefined ? m.width : m[0], h: m.height !== undefined ? m.height : m[1] };
+        var size = (f && f.size) ? f.size : 12, bold = uiBold(f);
+        return { w: uiWidth(s, size, bold), h: size * 1.18 };
     }
     function uiText(g, s, f, c, x, y) { g.drawString(s, uiPen(g, c, 1), x, y, f); }
     function uiTextC(g, s, f, c, cx, y) { uiText(g, s, f, c, cx - uiSize(g, s, f).w / 2, y); }
@@ -887,19 +908,16 @@
         // ---- topo (estilo janela de Mac)
         var top = uiCustom(win, UI.W, 52, function (g, W, H) {
             uiCard(g, 0, 0, W, H, 12, UI.card, UI.line);
-            uiDoodles(g, 0, 0, W, H, UI.line, frame);
+            uiDoodles(g, 0, 0, W, H, UI.line, 0);
             uiDot(g, 16, 13, 4.5, UI.dotR); uiDot(g, 30, 13, 4.5, UI.dotY); uiDot(g, 44, 13, 4.5, UI.dotG);
             var f = uiFont(17, true), w1 = uiSize(g, "Low-Key", f).w;
             uiText(g, "Low-Key", f, UI.txt, 14, 23);
             uiText(g, "Reels", f, UI.acc, 14 + w1 + 6, 23);
             var fv = uiFont(10, true), vs = "v" + LG.VERSION;
             uiText(g, vs, fv, UI.dim, W - uiSize(g, vs, fv).w - 12, 7);
-            // mini equalizador animado
-            var k, hs = [5, 11, 7, 13, 6];
-            for (k = 0; k < 5; k++) {
-                var bh = 4 + ((hs[k] + frame * (k % 2 ? 3 : 5)) % 12);
-                uiRound(g, W - 46 + k * 7, 44 - bh, 4, bh, 2, UI.acc);
-            }
+            // mini equalizador (parado)
+            var k, hs = [7, 13, 9, 15, 6];
+            for (k = 0; k < 5; k++) { uiRound(g, W - 46 + k * 7, 44 - hs[k], 4, hs[k], 2, UI.acc); }
         });
         top.alignment = ["fill", "top"];
 
@@ -958,35 +976,53 @@
         var s3 = section(3, "Estilo", true), b3 = s3.body;
         var gc = b3.add("group"); gc.spacing = 6; gc.alignChildren = ["left", "center"];
         var bPrev = uiButton(gc, "<", "prev", 28, 56);
-        var pv = uiCustom(gc, UI.W - 76, 178, function (g, W, H) {
-            var st = LG.STYLES[cur], k, n = st.pv.length, a = st.anim, cyc = frame % (n + 3);
+        var pv = uiCustom(gc, UI.W - 76, 214, function (g, W, H) {
+            var st = LG.STYLES[cur], k, n = st.pv.length, a = st.anim, D = 6;
+            var cycle = (n + 1) * D + 16, T = frame % cycle;
+            function ramp(t0, len) { return Math.max(0, Math.min(1, (T - t0) / len)); }
             uiCard(g, 0, 0, W, H, 14, UI.card, UI.line);
-            uiDoodles(g, 0, 0, W, H, UI.line, frame);
+            uiDoodles(g, 0, 0, W, H, UI.line, 0);
             // "celular" 9:16
-            var ph = H - 18, pw = Math.round(ph * 9 / 16), x0 = 10, y0 = 9, cx = x0 + pw / 2, sc = ph / 194;
-            uiCard(g, x0, y0, pw, ph, 10, UI.screen, UI.line);
-            uiRound(g, cx - 12, y0 + 5, 24, 5, 2.5, UI.line);
-            var total = 0;
-            for (k = 0; k < n; k++) { total += st.pv[k][1] * sc * 1.3; }
-            var y = y0 + (ph - total) / 2 + 3;
+            var ph = H - 18, pw = Math.round(ph * 9 / 16), x0 = 10, y0 = 9, cx = x0 + pw / 2, sc = ph / 170, maxW = pw - 16;
+            uiCard(g, x0, y0, pw, ph, 12, UI.screen, UI.line);
+            uiRound(g, cx - 13, y0 + 6, 26, 5, 2.5, UI.line);
+            // tamanho de cada linha, reduzido se nao couber na tela do celular
+            var sizes = [], total = 0;
             for (k = 0; k < n; k++) {
-                var ln = st.pv[k], text = ln[0], al = ln[2], dx = ln[3] * sc, dy = 0, f = uiFont(Math.max(8, Math.round(ln[1] * sc)), true), col;
-                if (a === "cum" || a === "shake") { al = k > cyc ? 0 : (k === Math.min(cyc, n - 1) ? 1 : 0.5); }
-                else if (a === "kar") { al = k <= cyc ? 1 : 0.26; }
-                else if (a === "type") { text = text.substr(0, Math.min(text.length, (frame % (text.length + 4)) + 1)); }
-                else if (a === "alt") { al = (frame % 4 < 2 ? 0 : 1) === (k % 2) ? 1 : 0; }
-                else if (a === "fade" || a === "burn") { al = Math.max(0, Math.min(1, ((frame % 9) + 1 - k * 1.5) / 3)); }
-                else if (a === "scr") { if (frame % 9 < 4) { text = scrambleText(text, frame + k); al = 0.55; } }
-                if (a === "shake") { dx += (frame % 2 ? 2 : -2) * (k % 2 ? 1 : -1); dy = frame % 3 - 1; }
-                if (al > 0.01) {
-                    col = uiMix(UI.screen, (a === "burn" && al < 0.99) ? UI.acc : UI.txt, al);
-                    uiTextC(g, text, f, col, cx + dx, y + dy);
+                var sz = st.pv[k][1] * sc, wd = uiWidth(st.pv[k][0], sz, true) + Math.abs(st.pv[k][3] * sc) * 2;
+                if (wd > maxW) { sz = sz * maxW / wd; }
+                sizes[k] = Math.max(8, Math.floor(sz));
+                total += sizes[k] * 1.3;
+            }
+            var y = y0 + (ph - total) / 2;
+            for (k = 0; k < n; k++) {
+                var ln = st.pv[k], text = ln[0], al = 1, size = sizes[k], col = UI.txt, t0 = k * D;
+                var dx = ln[3] * sc * (sizes[k] / (ln[1] * sc)), dy = 0, cursor = false;
+                if (a === "cum" || a === "shake") {
+                    var inn = ramp(t0, 3);
+                    al = inn * (1 - (k < n - 1 ? 0.5 * ramp(t0 + D, 3) : 0));
+                    dy = (1 - inn) * 6;
+                } else if (a === "kar") { al = 0.26 + 0.74 * ramp(t0, 3); }
+                else if (a === "type") { text = text.substr(0, Math.min(text.length, Math.floor(T / 3) + 1)); cursor = (T % 6) < 3; }
+                else if (a === "alt") {
+                    al = (Math.floor(T / 10) % 2) === (k % 2) ? 1 : 0;
+                    size = Math.max(8, Math.round(size * (0.8 + 0.2 * Math.min(1, (T % 10) / 3))));
+                } else if (a === "fade") { al = ramp(k * 5, 9); }
+                else if (a === "burn") { al = ramp(k * 4, 10); col = uiMix(UI.acc, UI.txt, al); }
+                else if (a === "scr") {
+                    var solved = Math.floor(ramp(2 + k * 3, 14) * (text.length + 1));
+                    if (solved < text.length) { text = text.substr(0, solved) + scrambleText(text, frame + k).substr(solved); al = 0.7; }
                 }
-                y += ln[1] * sc * 1.3;
+                if (a === "shake") { dx += ((frame * 7 + k * 3) % 5) - 2; dy += ((frame * 5 + k) % 3) - 1; }
+                if (al > 0.02 && text.length) {
+                    uiTextC(g, text, uiFont(size, true), uiMix(UI.screen, col, al), cx + dx, y + dy + (sizes[k] - size) / 2);
+                    if (cursor) { uiRect(g, cx + dx + uiWidth(text, size, true) / 2 + 2, y + 2, 2, size, UI.acc); }
+                }
+                y += sizes[k] * 1.3;
             }
             if (a === "wipe") {
-                var t = Math.min(1, (frame % 9) / 5), wx = x0 + 3 + (pw - 6) * t;
-                if (t < 1) { uiRect(g, wx, y0 + 14, x0 + pw - 3 - wx, ph - 28, UI.screen); uiRect(g, wx, y0 + ph * 0.3, 2, ph * 0.4, UI.acc); }
+                var wt = ramp(2, 16), wx = x0 + 4 + (pw - 8) * wt;
+                if (wt < 1) { uiRect(g, wx, y0 + 16, x0 + pw - 4 - wx, ph - 32, UI.screen); uiRect(g, wx, y0 + ph * 0.3, 2, ph * 0.4, UI.acc); }
             }
             // coluna de texto
             var tx = x0 + pw + 14, ty = y0 + 3;
@@ -1075,16 +1111,15 @@
         };
         bDel.onClick = function () { try { LG.removeGenerated(); } catch (e) { alert(e.toString()); } };
 
-        // ---- animacao (previa + equalizador). Um unico timer global; some sozinho se o painel fechar.
+        // ---- animacao da previa. Um unico timer global; some sozinho se o painel fechar.
         try { if ($.global.__LKR_TASK) { app.cancelTask($.global.__LKR_TASK); } } catch (e1) {}
         $.global.__LKR_TICK = function () {
             try {
                 frame++;
                 if (s3.open) { pv.notify("onDraw"); }
-                top.notify("onDraw");
             } catch (e) { try { app.cancelTask($.global.__LKR_TASK); } catch (e2) {} }
         };
-        try { $.global.__LKR_TASK = app.scheduleTask("$.global.__LKR_TICK()", 420, true); } catch (e3) {}
+        try { $.global.__LKR_TASK = app.scheduleTask("$.global.__LKR_TICK()", 90, true); } catch (e3) {}
         win.onClose = function () { try { app.cancelTask($.global.__LKR_TASK); } catch (e) {} return true; };
 
         win.onResizing = win.onResize = function () { this.layout.resize(); };
