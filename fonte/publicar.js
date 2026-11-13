@@ -20,7 +20,7 @@ function remoteSha(name) {
 }
 // version.txt por ultimo: ninguem ve o numero novo antes de o script novo estar la
 let sent = 0;
-for (const name of ['LegendaReels.jsx', 'Instalar-chavebaixa-reels.bat', 'version.txt']) {
+for (const name of ['LegendaReels.jsx', 'cep/index.html', 'cep/host.jsx', 'cep/manifest.xml', 'Instalar-chavebaixa-reels.bat', 'version.txt']) {
   const buf = fs.readFileSync(path.join(ghDir, name)), sha = remoteSha(name);
   if (sha === blobSha(buf)) { console.log('igual, pulei: ' + name); continue; }
   const body = { message: msg, content: buf.toString('base64'), branch: BRANCH };
