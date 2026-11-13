@@ -1,12 +1,12 @@
 @echo off
 setlocal
-title Legenda Reels 1.3.0 - instalar / atualizar
+title Legenda Reels 1.3.1 - instalar / atualizar
 set "SELF=%~f0"
 set "DEST=%APPDATA%\LegendaReels"
 if not "%~1"=="" set "DEST=%~1"
 set "OUT_SCRIPT=%DEST%\LegendaReels.jsx"
 set "OUT_LOADER=%DEST%\loader.jsx"
-echo Legenda Reels 1.3.0
+echo Legenda Reels 1.3.1
 echo.
 
 rem 1) extrai o script e o carregador que estao embutidos no fim deste arquivo
@@ -14,7 +14,7 @@ if not exist "%DEST%" mkdir "%DEST%"
 powershell -NoProfile -ExecutionPolicy Bypass -Command "$l=[IO.File]::ReadAllLines($env:SELF); $i=[Array]::IndexOf($l,'::#SCRIPT#'); $j=[Array]::IndexOf($l,'::#LOADER#'); if($i -lt 0 -or $j -lt $i){exit 3}; [IO.File]::WriteAllBytes($env:OUT_SCRIPT,[Convert]::FromBase64String(($l[($i+1)..($j-1)] -join ''))); [IO.File]::WriteAllBytes($env:OUT_LOADER,[Convert]::FromBase64String(($l[($j+1)..($l.Length-1)] -join '')))"
 if errorlevel 1 goto fail
 if not exist "%OUT_SCRIPT%" goto fail
-echo Script 1.3.0 gravado em %DEST%
+echo Script 1.3.1 gravado em %DEST%
 
 rem 2) carregador em cada After Effects instalado (so copia se faltar ou estiver diferente)
 set NEED=0
@@ -73,7 +73,7 @@ cGUgYnVybiBzY3JhbWJsZSBzdGFpcnMgZmxhc2gga2FyYW9rZSB0cmFja2luZyBibHVyaW4gc2hh
 a2UKICAgIDUuIENsaXF1ZSAiR2VyYXIgbGVnZW5kYXMiLgoKICBDb21wYXRpdmVsIGNvbSBBZnRl
 ciBFZmZlY3RzIDIwMjAgKDE3LngpIGVtIGRpYW50ZS4gQXJxdWl2byBzbyBjb20gQVNDSUkgZGUg
 cHJvcG9zaXRvLgoqLwooZnVuY3Rpb24gKHRoaXNPYmopIHsKCiAgICB2YXIgTEcgPSB7fTsKICAg
-IExHLk5BTUUgPSAiTGVnZW5kYSBSZWVscyI7CiAgICBMRy5WRVJTSU9OID0gIjEuMy4wIjsKICAg
+IExHLk5BTUUgPSAiTGVnZW5kYSBSZWVscyI7CiAgICBMRy5WRVJTSU9OID0gIjEuMy4xIjsKICAg
 IC8vIGRlIG9uZGUgbyBjYXJyZWdhZG9yIGJhaXhhIGFzIGF0dWFsaXphY29lcyAocGFzdGEgInJh
 dyIgZG8gcmVwb3NpdG9yaW8gbm8gR2l0SHViLCB0ZXJtaW5hbmRvIGVtIC8pCiAgICBMRy5VUERB
 VEVfVVJMID0gImh0dHBzOi8vcmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbS9yaXZhdHRvL2xlZ2Vu
