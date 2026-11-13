@@ -1,63 +1,51 @@
-// Gera o Instalar-chavebaixa-reels.bat (arquivo unico, com o script e o carregador embutidos em base64).
+// Gera tudo o que vai para o GitHub (pasta ../github) e o instalador de arquivo unico.
+//   LegendaReels.jsx      -> script do After (painel antigo ScriptUI + logica das legendas)
+//   cep/index.html        -> painel HTML (interface nova)
+//   cep/host.jsx          -> o mesmo script, em modo "sem interface", usado pelo painel HTML
+//   cep/manifest.xml      -> registro do painel HTML no After
+//   Instalar-chavebaixa-reels.bat -> instala o painel HTML (sem administrador)
 // Uso:  node fonte/build-bat.js
 const fs = require('fs'), path = require('path');
-const dir = __dirname;
-const script = fs.readFileSync(path.join(dir, 'LegendaReels.jsx'));
-const loader = fs.readFileSync(path.join(dir, 'loader.jsx'));
-const ver = (/LG\.VERSION = "([^"]+)"/.exec(script.toString('utf8')) || [, '?'])[1];
-const b64 = b => b.toString('base64').replace(/(.{76})/g, '$1\r\n').replace(/\r\n$/, '');
+const dir = __dirname, gh = path.join(dir, '..', 'github');
+const script = fs.readFileSync(path.join(dir, 'LegendaReels.jsx'), 'utf8');
+const ver = (/LG\.VERSION = "([^"]+)"/.exec(script) || [, '?'])[1];
+if (/[^\x00-\x7E]/.test(script)) throw new Error('LegendaReels.jsx precisa ser ASCII puro');
 
+const html = fs.readFileSync(path.join(dir, 'cep', 'index.html'), 'utf8').split('__VERSION__').join(ver);
+if (html.indexOf('chavebaixa-reels-panel v' + ver + ' ') < 0) throw new Error('marcador de versao ausente no index.html');
+const host = '$.global.__LG_HEADLESS = true;\n' + script;
+const manifest = fs.readFileSync(path.join(dir, 'cep', 'manifest.xml'), 'utf8');
+
+const b64 = s => Buffer.from(s, 'utf8').toString('base64').replace(/(.{76})/g, '$1\r\n').replace(/\r\n$/, '');
+const ps = "$l=[IO.File]::ReadAllLines($env:SELF); function X($a,$b,$o){ $i=[Array]::IndexOf($l,$a); $j=[Array]::IndexOf($l,$b); if($i -lt 0 -or $j -lt $i){exit 3}; " +
+           "[IO.File]::WriteAllBytes($o,[Convert]::FromBase64String(($l[($i+1)..($j-1)] -join ''))) }; " +
+           "X '::#INDEX#' '::#HOST#' ($env:EXT+'\\index.html'); X '::#HOST#' '::#MANIFEST#' ($env:EXT+'\\host.jsx'); X '::#MANIFEST#' '::#END#' ($env:EXT+'\\CSXS\\manifest.xml')";
 const head = [
   '@echo off',
   'setlocal',
-  'title chavebaixa reels ' + ver + ' - instalar / atualizar',
+  'title chavebaixa reels ' + ver + ' - instalar',
   'set "SELF=%~f0"',
-  'set "DEST=%APPDATA%\\LegendaReels"',
-  'if not "%~1"=="" set "DEST=%~1"',
-  'set "OUT_SCRIPT=%DEST%\\LegendaReels.jsx"',
-  'set "OUT_LOADER=%DEST%\\loader.jsx"',
+  'set "EXT=%APPDATA%\\Adobe\\CEP\\extensions\\com.chavebaixa.reels"',
+  'if not "%~1"=="" set "EXT=%~1"',
   'echo chavebaixa reels ' + ver,
   'echo.',
   '',
-  'rem 1) extrai o script e o carregador que estao embutidos no fim deste arquivo',
-  'if not exist "%DEST%" mkdir "%DEST%"',
-  'powershell -NoProfile -ExecutionPolicy Bypass -Command "$l=[IO.File]::ReadAllLines($env:SELF); $i=[Array]::IndexOf($l,\'::#SCRIPT#\'); $j=[Array]::IndexOf($l,\'::#LOADER#\'); if($i -lt 0 -or $j -lt $i){exit 3}; [IO.File]::WriteAllBytes($env:OUT_SCRIPT,[Convert]::FromBase64String(($l[($i+1)..($j-1)] -join \'\'))); [IO.File]::WriteAllBytes($env:OUT_LOADER,[Convert]::FromBase64String(($l[($j+1)..($l.Length-1)] -join \'\')))"',
+  'rem 1) copia o painel para a pasta de extensoes do After (pasta do usuario, sem administrador)',
+  'if not exist "%EXT%\\CSXS" mkdir "%EXT%\\CSXS"',
+  'powershell -NoProfile -ExecutionPolicy Bypass -Command "' + ps + '"',
   'if errorlevel 1 goto fail',
-  'if not exist "%OUT_SCRIPT%" goto fail',
-  'echo Script ' + ver + ' gravado em %DEST%',
+  'if not exist "%EXT%\\index.html" goto fail',
+  'echo Painel gravado em %EXT%',
   '',
-  'rem 2) carregador em cada After Effects instalado (so copia se faltar ou estiver diferente)',
-  'set NEED=0',
-  'set FOUND=0',
-  'for /d %%D in ("%ProgramFiles%\\Adobe\\Adobe After Effects*") do (',
-  '  if exist "%%D\\Support Files\\Scripts\\ScriptUI Panels" (',
-  '    set FOUND=1',
-  '    fc /b "%OUT_LOADER%" "%%D\\Support Files\\Scripts\\ScriptUI Panels\\chavebaixa reels.jsx" >nul 2>&1 || set NEED=1',
-  '    if exist "%%D\\Support Files\\Scripts\\ScriptUI Panels\\Low-Key Reels.jsx" set NEED=1',
-  '    if exist "%%D\\Support Files\\Scripts\\ScriptUI Panels\\LegendaReels.jsx" set NEED=1',
-  '  )',
-  ')',
-  'if "%FOUND%"=="0" echo Nao achei nenhum After Effects em %ProgramFiles%\\Adobe & goto done',
-  'if "%NEED%"=="0" echo Painel ja estava instalado no After. & goto done',
+  'rem 2) paineis nao assinados pela Adobe so abrem com esta opcao ligada (so para o seu usuario)',
+  'if "%~1"=="" for %%N in (8 9 10 11 12 13 14 15 16) do reg add "HKCU\\Software\\Adobe\\CSXS.%%N" /v PlayerDebugMode /t REG_SZ /d 1 /f >nul 2>&1',
   '',
-  'net session >nul 2>&1',
-  'if not errorlevel 1 goto admin',
-  'echo Primeira instalacao: aceite o pedido de administrador para colocar o painel na pasta do After.',
-  'powershell -NoProfile -Command "Start-Process -FilePath $env:SELF -ArgumentList (\'\\\"\' + $env:DEST + \'\\\"\') -Verb RunAs"',
-  'exit /b 0',
-  '',
-  ':admin',
-  'for /d %%D in ("%ProgramFiles%\\Adobe\\Adobe After Effects*") do (',
-  '  if exist "%%D\\Support Files\\Scripts\\ScriptUI Panels" (',
-  '    if exist "%%D\\Support Files\\Scripts\\ScriptUI Panels\\LegendaReels.jsx" del /q "%%D\\Support Files\\Scripts\\ScriptUI Panels\\LegendaReels.jsx"',
-  '    if exist "%%D\\Support Files\\Scripts\\ScriptUI Panels\\Low-Key Reels.jsx" del /q "%%D\\Support Files\\Scripts\\ScriptUI Panels\\Low-Key Reels.jsx"',
-  '    copy /Y "%OUT_LOADER%" "%%D\\Support Files\\Scripts\\ScriptUI Panels\\chavebaixa reels.jsx" >nul && echo Painel instalado em %%~nxD',
-  '  )',
-  ')',
-  '',
-  ':done',
   'echo.',
-  'echo Pronto. No After: abra o painel em Window ^> chavebaixa reels.jsx',
+  'echo Pronto.',
+  'echo   1. Feche o After Effects e abra de novo.',
+  'echo   2. Abra em  Window ^> Extensions ^> chavebaixa reels',
+  'echo.',
+  'echo Depois disso o painel se atualiza sozinho.',
   'echo.',
   'pause',
   'exit /b 0',
@@ -69,18 +57,14 @@ const head = [
   'exit /b 1',
   ''
 ].join('\r\n');
+const bat = head + '::#INDEX#\r\n' + b64(html) + '\r\n::#HOST#\r\n' + b64(host) + '\r\n::#MANIFEST#\r\n' + b64(manifest) + '\r\n::#END#\r\n';
+if (/[^\x00-\x7E]/.test(bat)) throw new Error('non-ASCII in bat');
 
-const out = head + '::#SCRIPT#\r\n' + b64(script) + '\r\n::#LOADER#\r\n' + b64(loader) + '\r\n';
-if (/[^\x00-\x7E]/.test(out)) throw new Error('non-ASCII in bat');
-const dest = path.join(dir, '..', 'Instalar-chavebaixa-reels.bat');
-fs.writeFileSync(dest, out, 'latin1');
-console.log('ok', dest, 'v' + ver, out.length + ' bytes');
-
-// pasta "github": exatamente os arquivos que vao para o repositorio
-const gh = path.join(dir, '..', 'github');
-if (!fs.existsSync(gh)) fs.mkdirSync(gh);
-fs.writeFileSync(path.join(gh, 'LegendaReels.jsx'), script);
-fs.writeFileSync(path.join(gh, 'version.txt'), ver + '\n');
-fs.writeFileSync(path.join(gh, 'Instalar-chavebaixa-reels.bat'), out, 'latin1');
-const url = (/LG\.UPDATE_URL = "([^"]*)"/.exec(script.toString('utf8')) || [, ''])[1];
-console.log('github/ pronto. UPDATE_URL =', url || '(vazio: auto-atualizacao desligada)');
+const out = { 'LegendaReels.jsx': script, 'version.txt': ver + '\n', 'cep/index.html': html, 'cep/host.jsx': host, 'cep/manifest.xml': manifest, 'Instalar-chavebaixa-reels.bat': bat };
+for (const name of Object.keys(out)) {
+  const f = path.join(gh, name);
+  fs.mkdirSync(path.dirname(f), { recursive: true });
+  fs.writeFileSync(f, out[name], name.endsWith('.bat') ? 'latin1' : 'utf8');
+}
+fs.writeFileSync(path.join(dir, '..', 'Instalar-chavebaixa-reels.bat'), bat, 'latin1');
+console.log('ok v' + ver + ' | bat ' + bat.length + ' bytes | html ' + html.length + ' | host ' + host.length);
