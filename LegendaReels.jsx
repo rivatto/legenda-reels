@@ -21,7 +21,7 @@
 
     var LG = {};
     LG.NAME = "chavebaixa reels";
-    LG.VERSION = "1.6.1";
+    LG.VERSION = "1.6.2";
     // de onde o carregador baixa as atualizacoes (pasta "raw" do repositorio no GitHub, terminando em /)
     LG.UPDATE_URL = "https://raw.githubusercontent.com/rivatto/legenda-reels/main/";
     LG.PREFIX = "LG | ";
@@ -768,6 +768,48 @@
         return { count: words.length, offset: L.startTime, text: obj.text || "" };
     };
 
+    // ---------------------------------------------------------------- atualizacao manual
+    function newerVersion(a, b) {
+        var x = String(a).split("."), y = String(b).split("."), i;
+        for (i = 0; i < Math.max(x.length, y.length); i++) {
+            var p = parseInt(x[i] || "0", 10), q = parseInt(y[i] || "0", 10);
+            if (p !== q) { return p > q; }
+        }
+        return false;
+    }
+    function fetchUrl(url, dest) {
+        if (dest.exists) { dest.remove(); }
+        var curl = $.os.indexOf("Windows") >= 0 ? "curl.exe" : "curl";
+        system.callSystem(curl + ' -s -L -f --connect-timeout 4 --max-time 15 -o "' + dest.fsName + '" "' + url + '"');
+        return dest.exists && dest.length > 0;
+    }
+    // devolve um texto dizendo o que aconteceu
+    LG.checkUpdate = function () {
+        if (!LG.UPDATE_URL) { return "Esta copia nao tem endereco de atualizacao."; }
+        var prefOn = false;
+        try { prefOn = app.preferences.getPrefAsLong("Main Pref Section", "Pref_SCRIPTING_FILE_NETWORK_SECURITY") === 1; } catch (e0) {}
+        if (!prefOn) {
+            return "O After esta bloqueando a internet para scripts, por isso o painel nao se atualiza.\n\n" +
+                   "Marque em Edit > Preferences > Scripting & Expressions:\n\"Allow Scripts to Write Files and Access Network\"\n\nDepois feche e reabra o painel.";
+        }
+        var dirU = Folder.userData.fsName + "/LegendaReels", target = new File(dirU + "/LegendaReels.jsx");
+        if (!target.exists) { return "Este painel nao foi instalado pelo .bat, entao nao tem como se atualizar sozinho.\nBaixe e rode o Instalar-chavebaixa-reels.bat do GitHub."; }
+        var stamp = "?t=" + new Date().getTime(), vf = new File(dirU + "/_version.txt"), nf = new File(dirU + "/_novo.jsx");
+        if (!fetchUrl(LG.UPDATE_URL + "version.txt" + stamp, vf)) { return "Nao consegui falar com o GitHub (sem internet, firewall ou curl ausente)."; }
+        var remote = readFile(vf).replace(/\s+/g, ""); vf.remove();
+        if (!/^\d+(\.\d+)*$/.test(remote)) { return "O GitHub respondeu algo estranho. Tente de novo em alguns minutos."; }
+        if (!newerVersion(remote, LG.VERSION)) { return "Voce ja esta na versao mais nova (v" + LG.VERSION + ").\n\nSe acabei de publicar algo, o GitHub pode levar ate 5 minutos para liberar."; }
+        if (!fetchUrl(LG.UPDATE_URL + "LegendaReels.jsx" + stamp, nf)) { return "Achei a v" + remote + ", mas o download falhou. Tente de novo."; }
+        var txt = readFile(nf), m = /LG\.VERSION = "([0-9.]+)"/.exec(txt);
+        if (!m || m[1] !== remote || txt.length < 20000 || txt.indexOf("__LG_HOST") < 0) {
+            nf.remove();
+            return "Achei a v" + remote + ", mas o arquivo ainda nao chegou inteiro no GitHub. Tente de novo em alguns minutos.";
+        }
+        target.copy(dirU + "/LegendaReels.anterior.jsx");
+        nf.copy(target.fsName); nf.remove();
+        return "v" + remote + " baixada (voce estava na v" + LG.VERSION + ").\n\nFeche este painel e abra de novo em Window para ver a versao nova.";
+    };
+
     // ---------------------------------------------------------------- interface
     var UI = {
         W: 330,
@@ -1158,6 +1200,11 @@
         var g5 = b3.add("group"); g5.spacing = 6;
         uiLabel(g5, "Atraso do audio na comp (s):");
         var eOff = g5.add("edittext", undefined, "0"); eOff.characters = 7;
+
+        // ---- atualizacao manual (o painel ja confere sozinho ao abrir; isto serve para forcar e para dizer o que houve)
+        var bUpd = uiButton(inner, "Procurar atualizacao  (v" + LG.VERSION + ")", "plain", UI.W, 24);
+        bUpd.alignment = ["fill", "top"];
+        bUpd.onClick = function () { try { alert(LG.checkUpdate()); } catch (e) { alert(e.toString()); } };
 
         // ---- rodape (sempre visivel)
         var divider = uiCustom(foot, UI.W, 12, function (g, W, H) {
