@@ -1,5 +1,5 @@
 /*
-  LegendaReels.jsx  -  legendas de letra de musica sincronizadas, no estilo do projeto EXTRAREEL.
+  Low-Key Reels (LegendaReels.jsx)  -  legendas de letra de musica sincronizadas, no estilo do projeto EXTRAREEL.
 
   COMO USAR
     1. After Effects > Edit > Preferences > Scripting & Expressions >
@@ -20,8 +20,8 @@
 (function (thisObj) {
 
     var LG = {};
-    LG.NAME = "Legenda Reels";
-    LG.VERSION = "1.3.1";
+    LG.NAME = "Low-Key Reels";
+    LG.VERSION = "1.4.0";
     // de onde o carregador baixa as atualizacoes (pasta "raw" do repositorio no GitHub, terminando em /)
     LG.UPDATE_URL = "https://raw.githubusercontent.com/rivatto/legenda-reels/main/";
     LG.PREFIX = "LG | ";
@@ -54,32 +54,32 @@
         maxWordsAuto: 6
     };
 
-    // id, nome, novo?, descricao (linhas), previa: linhas [texto, tamanho, brilho 0..1, deslocamento x], efeito da previa
+    // id, nome, novo?, descricao (linhas), previa: linhas [texto, tamanho, brilho 0..1, deslocamento x], animacao da previa
     LG.STYLES = [
-        { id: "stack",    name: "Pilha",    isNew: false, desc: ["Uma palavra por linha,", "acumulando no tempo", "da musica."],
-          pv: [["Like", 15, 0.45, 0], ["how", 15, 0.45, 0], ["my", 15, 0.45, 0], ["cousin", 15, 1, 0]] },
-        { id: "phrase",   name: "Frase",    isNew: false, desc: ["Frase centralizada que", "cresce palavra a palavra."],
-          pv: [["Know that", 15, 0.5, 0], ["shit would", 15, 1, 0]] },
-        { id: "punch",    name: "Punch",    isNew: false, desc: ["Palavra gigante digitada", "letra a letra, trocando", "de fonte."],
-          pv: [["NO", 46, 1, 0]] },
-        { id: "wipe",     name: "Wipe",     isNew: false, desc: ["Bloco inteiro revelado", "com Linear Wipe."], fx: "wipe",
+        { id: "stack",    name: "Pilha",    isNew: false, anim: "cum",  desc: ["Uma palavra por linha,", "acumulando no tempo", "da musica."],
+          pv: [["Like", 15, 1, 0], ["how", 15, 1, 0], ["my", 15, 1, 0], ["cousin", 15, 1, 0]] },
+        { id: "phrase",   name: "Frase",    isNew: false, anim: "cum",  desc: ["Frase centralizada que", "cresce palavra a palavra."],
+          pv: [["Know that", 15, 1, 0], ["shit would", 15, 1, 0], ["have been", 15, 1, 0]] },
+        { id: "punch",    name: "Punch",    isNew: false, anim: "type", desc: ["Palavra gigante digitada", "letra a letra, trocando", "de fonte."],
+          pv: [["MAIN", 32, 1, 0]] },
+        { id: "wipe",     name: "Wipe",     isNew: false, anim: "wipe", desc: ["Bloco inteiro revelado", "com Linear Wipe."],
           pv: [["Shots fired", 14, 1, 0], ["now it's a", 14, 1, 0], ["man gone", 14, 1, 0]] },
-        { id: "burn",     name: "Burn",     isNew: false, desc: ["Bloco surge queimando", "com CC Burn Film."], fx: "burn",
+        { id: "burn",     name: "Burn",     isNew: false, anim: "burn", desc: ["Bloco surge queimando", "com CC Burn Film."],
           pv: [["My heart", 14, 1, 0], ["filled up", 14, 1, 0], ["with pain", 14, 1, 0]] },
-        { id: "scramble", name: "Scramble", isNew: false, desc: ["Letras embaralhadas", "ate formar o texto."],
-          pv: [["Ev3ry8ody", 14, 0.45, 0], ["gr!ev1ng", 14, 0.45, 0], ["want to go", 14, 1, 0]] },
-        { id: "stairs",   name: "Escada",   isNew: true,  desc: ["Palavras em zigue-zague,", "acumulando."],
-          pv: [["Like", 14, 0.5, -20], ["how", 14, 0.5, -4], ["my", 14, 0.5, 12], ["cousin", 14, 1, -4]] },
-        { id: "flash",    name: "Flash",    isNew: true,  desc: ["Uma palavra por vez,", "alternando fonte", "e tamanho."],
-          pv: [["we", 12, 0.3, 0], ["RIDE", 34, 1, 0]] },
-        { id: "karaoke",  name: "Karaoke",  isNew: true,  desc: ["Frase inteira na tela;", "a palavra cantada", "acende."],
-          pv: [["I lost", 14, 1, 0], ["my brother", 14, 0.3, 0]] },
-        { id: "tracking", name: "Tracking", isNew: true,  desc: ["Letras espacadas", "que se juntam."],
-          pv: [["S H O T S", 13, 0.4, 0], ["SHOTS", 19, 1, 0]] },
-        { id: "blurin",   name: "Blur-in",  isNew: true,  desc: ["Letras saem do", "desfoque uma a uma."],
-          pv: [["Mommas", 15, 1, 0], ["crying", 15, 0.55, 0], ["at the", 15, 0.2, 0]] },
-        { id: "shake",    name: "Tremor",   isNew: true,  desc: ["Frase acumulando", "com tremor (wiggle)."], fx: "shake",
-          pv: [["GO HOME", 18, 1, 0]] }
+        { id: "scramble", name: "Scramble", isNew: false, anim: "scr",  desc: ["Letras embaralhadas", "ate formar o texto."],
+          pv: [["Everybody", 14, 1, 0], ["grieving", 14, 1, 0], ["want to go", 14, 1, 0]] },
+        { id: "stairs",   name: "Escada",   isNew: true,  anim: "cum",  desc: ["Palavras em zigue-zague,", "acumulando."],
+          pv: [["Like", 14, 1, -18], ["how", 14, 1, -4], ["my", 14, 1, 10], ["cousin", 14, 1, -4]] },
+        { id: "flash",    name: "Flash",    isNew: true,  anim: "alt",  desc: ["Uma palavra por vez,", "alternando fonte", "e tamanho."],
+          pv: [["we", 16, 1, 0], ["RIDE", 30, 1, 0]] },
+        { id: "karaoke",  name: "Karaoke",  isNew: true,  anim: "kar",  desc: ["Frase inteira na tela;", "a palavra cantada", "acende."],
+          pv: [["I lost", 14, 1, 0], ["my brother", 14, 1, 0], ["go home", 14, 1, 0]] },
+        { id: "tracking", name: "Tracking", isNew: true,  anim: "alt",  desc: ["Letras espacadas", "que se juntam."],
+          pv: [["S H O T S", 13, 1, 0], ["SHOTS", 19, 1, 0]] },
+        { id: "blurin",   name: "Blur-in",  isNew: true,  anim: "fade", desc: ["Letras saem do", "desfoque uma a uma."],
+          pv: [["Mommas", 15, 1, 0], ["crying", 15, 1, 0], ["at the", 15, 1, 0]] },
+        { id: "shake",    name: "Tremor",   isNew: true,  anim: "shake", desc: ["Frase acumulando", "com tremor (wiggle)."],
+          pv: [["GO", 20, 1, 0], ["HOME", 20, 1, 0]] }
     ];
     // estilos que entram na alternancia por padrao: os do EXTRAREEL
     LG.DEFAULT_ON = "stack,phrase,punch,wipe,burn,scramble";
@@ -760,17 +760,21 @@
 
     // ---------------------------------------------------------------- interface
     var UI = {
-        bg:     [0.105, 0.105, 0.115, 1],
-        card:   [0.165, 0.165, 0.18, 1],
+        W: 360,
+        bg:     [0.1, 0.1, 0.11, 1],
+        card:   [0.16, 0.16, 0.175, 1],
         cardHi: [0.215, 0.215, 0.235, 1],
-        line:   [0.29, 0.29, 0.32, 1],
-        screen: [0.035, 0.035, 0.04, 1],
-        acc:    [0.96, 0.37, 0.2, 1],
-        accHi:  [1, 0.47, 0.3, 1],
-        accLo:  [0.78, 0.28, 0.14, 1],
-        txt:    [0.93, 0.93, 0.93, 1],
+        line:   [0.28, 0.28, 0.31, 1],
+        screen: [0.03, 0.03, 0.035, 1],
+        acc:    [0.94, 0.17, 0.21, 1],
+        accHi:  [1, 0.3, 0.33, 1],
+        accLo:  [0.72, 0.1, 0.14, 1],
+        txt:    [0.94, 0.94, 0.94, 1],
         dim:    [0.58, 0.58, 0.62, 1],
-        white:  [1, 1, 1, 1]
+        white:  [1, 1, 1, 1],
+        dotR:   [1, 0.37, 0.34, 1],
+        dotY:   [1, 0.74, 0.18, 1],
+        dotG:   [0.16, 0.79, 0.25, 1]
     };
     function uiBrush(g, c) { return g.newBrush(g.BrushType.SOLID_COLOR, c); }
     function uiPen(g, c, w) { return g.newPen(g.PenType.SOLID_COLOR, c, w || 1); }
@@ -779,7 +783,20 @@
         catch (e) { return ScriptUI.newFont("dialog", ScriptUI.FontStyle.REGULAR, size); }
     }
     function uiRect(g, x, y, w, h, c) { g.newPath(); g.rectPath(x, y, w, h); g.fillPath(uiBrush(g, c)); }
-    function uiFrame(g, x, y, w, h, c) { g.newPath(); g.rectPath(x + 0.5, y + 0.5, w - 1, h - 1); g.strokePath(uiPen(g, c, 1)); }
+    function uiDot(g, cx, cy, r, c) { g.newPath(); g.ellipsePath(cx - r, cy - r, r * 2, r * 2); g.fillPath(uiBrush(g, c)); }
+    // retangulo de cantos arredondados (2 retangulos + 4 circulos)
+    function uiRound(g, x, y, w, h, r, c) {
+        r = Math.max(0, Math.min(r, w / 2, h / 2));
+        if (r < 1) { uiRect(g, x, y, w, h, c); return; }
+        uiRect(g, x + r, y, w - 2 * r, h, c);
+        uiRect(g, x, y + r, w, h - 2 * r, c);
+        uiDot(g, x + r, y + r, r, c); uiDot(g, x + w - r, y + r, r, c);
+        uiDot(g, x + r, y + h - r, r, c); uiDot(g, x + w - r, y + h - r, r, c);
+    }
+    function uiCard(g, x, y, w, h, r, fill, border) {
+        if (border) { uiRound(g, x, y, w, h, r, border); uiRound(g, x + 1, y + 1, w - 2, h - 2, r - 1, fill); }
+        else { uiRound(g, x, y, w, h, r, fill); }
+    }
     function uiSize(g, s, f) {
         var m = g.measureString(s, f);
         return { w: m.width !== undefined ? m.width : m[0], h: m.height !== undefined ? m.height : m[1] };
@@ -787,25 +804,42 @@
     function uiText(g, s, f, c, x, y) { g.drawString(s, uiPen(g, c, 1), x, y, f); }
     function uiTextC(g, s, f, c, cx, y) { uiText(g, s, f, c, cx - uiSize(g, s, f).w / 2, y); }
     function uiMix(a, b, t) { return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t, 1]; }
-    function uiRedraw(v) { try { v.notify("onDraw"); } catch (e) { try { v.hide(); v.show(); } catch (e2) {} } }
+    function uiTri(g, cx, cy, dir, s, c) {       // dir: "l" "r" "d"
+        g.newPath();
+        if (dir === "d") { g.moveTo(cx - s, cy - s * 0.6); g.lineTo(cx + s, cy - s * 0.6); g.lineTo(cx, cy + s * 0.7); }
+        else { var d = dir === "l" ? -1 : 1; g.moveTo(cx + d * s * 0.7, cy); g.lineTo(cx - d * s * 0.6, cy - s); g.lineTo(cx - d * s * 0.6, cy + s); }
+        g.closePath(); g.fillPath(uiBrush(g, c));
+    }
+    // desenhinhos de fundo
+    function uiDoodles(g, x, y, w, h, c, f) {
+        var pts = [[0.62, 0.3, 3], [0.74, 0.72, 2], [0.86, 0.22, 2], [0.93, 0.62, 3], [0.55, 0.8, 2], [0.8, 0.45, 1.5]], i;
+        for (i = 0; i < pts.length; i++) {
+            var px0 = x + w * pts[i][0], py0 = y + h * pts[i][1] + ((f + i) % 4 < 2 ? 0 : 1), r = pts[i][2];
+            if (i % 3 === 0) { uiRect(g, px0 - r, py0 - 0.5, r * 2, 1.5, c); uiRect(g, px0 - 0.5, py0 - r, 1.5, r * 2, c); }   // "+"
+            else if (i % 3 === 1) { uiDot(g, px0, py0, r, c); }
+            else { uiDot(g, px0, py0, r + 1, c); uiDot(g, px0, py0, r - 0.5, UI.card); }                                    // anel
+        }
+    }
+    function uiRedraw(v) { try { v.notify("onDraw"); } catch (e) {} }
 
-    // botao chapado; kind: "primary" | "plain" | "prev" | "next"
+    // botao arredondado; kind: "primary" | "plain" | "prev" | "next"
     function uiButton(parent, label, kind, w, h) {
         var b = parent.add("button", undefined, label);
-        b.preferredSize = [w, h || 30];
+        b.preferredSize = [w, h || 28];
         b.onDraw = function (st) {
             try {
                 var g = this.graphics, W = this.size[0], H = this.size[1];
-                var over = st && st.mouseOver, down = st && st.leftButtonPressed, c;
-                if (kind === "primary") { c = down ? UI.accLo : (over ? UI.accHi : UI.acc); }
-                else { c = down ? UI.bg : (over ? UI.cardHi : UI.card); }
-                uiRect(g, 0, 0, W, H, c);
-                if (kind !== "primary") { uiFrame(g, 0, 0, W, H, over ? UI.dim : UI.line); }
-                if (kind === "prev" || kind === "next") {
-                    var d = kind === "prev" ? -1 : 1, cx = W / 2, cy = H / 2;
-                    g.newPath(); g.moveTo(cx + d * 5, cy); g.lineTo(cx - d * 4, cy - 8); g.lineTo(cx - d * 4, cy + 8); g.closePath();
-                    g.fillPath(uiBrush(g, over ? UI.acc : UI.txt));
+                var over = st && st.mouseOver, down = st && st.leftButtonPressed, c, r = Math.min(H / 2, 12);
+                uiRect(g, 0, 0, W, H, UI.bg);
+                if (kind === "primary") {
+                    c = down ? UI.accLo : (over ? UI.accHi : UI.acc);
+                    uiRound(g, 0, 0, W, H, r, c);
                 } else {
+                    c = down ? UI.bg : (over ? UI.cardHi : UI.card);
+                    uiCard(g, 0, 0, W, H, r, c, over ? UI.acc : UI.line);
+                }
+                if (kind === "prev" || kind === "next") { uiTri(g, W / 2, H / 2, kind === "prev" ? "l" : "r", 6, over ? UI.acc : UI.txt); }
+                else {
                     var f = uiFont(12, true), m = uiSize(g, this.text, f);
                     uiText(g, this.text, f, kind === "primary" ? UI.white : UI.txt, (W - m.w) / 2, (H - m.h) / 2);
                 }
@@ -821,151 +855,177 @@
         v.onDraw = function () { try { draw.call(this, this.graphics, this.size[0], this.size[1]); } catch (e) {} };
         return v;
     }
-
-    function uiHeader(parent, num, title) {
-        var v = uiCustom(parent, 380, 22, function (g, W, H) {
-            uiText(g, num, uiFont(12, true), UI.acc, 0, 2);
-            uiText(g, title, uiFont(12, true), UI.txt, 18, 2);
-            uiRect(g, 0, H - 1, W, 1, UI.line);
-        });
-        v.alignment = ["fill", "top"];
-        return v;
-    }
     function uiLabel(parent, text) {
         var s = parent.add("statictext", undefined, text);
         try { s.graphics.foregroundColor = uiPen(s.graphics, UI.dim, 1); } catch (e) {}
         return s;
     }
-
     function loadSetting(name, def) {
         try { if (app.settings.haveSetting(LG.SETTINGS, name)) { return app.settings.getSetting(LG.SETTINGS, name); } } catch (e) {}
         return def;
     }
     function saveSetting(name, val) { try { app.settings.saveSetting(LG.SETTINGS, name, String(val)); } catch (e) {} }
 
+    function scrambleText(s, seed) {
+        var pool = "X#%&$@07K?", out = "", i;
+        for (i = 0; i < s.length; i++) { out += s.charAt(i) === " " ? " " : pool.charAt((seed * 7 + i * 13) % pool.length); }
+        return out;
+    }
+
     function buildUI(host) {
         var win = (host instanceof Panel) ? host : new Window("palette", LG.NAME, undefined, { resizeable: true });
-        win.orientation = "column"; win.alignChildren = ["fill", "top"]; win.spacing = 7; win.margins = 12;
+        win.orientation = "column"; win.alignChildren = ["fill", "top"]; win.spacing = 6; win.margins = 10;
         try { win.graphics.backgroundColor = uiBrush(win.graphics, UI.bg); } catch (e0) {}
 
-        // estado do carrossel
-        var cur = parseInt(loadSetting("cur", "0"), 10) || 0, i;
+        var frame = 0, i;
+        var cur = parseInt(loadSetting("cur", "0"), 10) || 0;
         if (cur < 0 || cur >= LG.STYLES.length) { cur = 0; }
         var on = {}, saved = loadSetting("on", LG.DEFAULT_ON).split(",");
         for (i = 0; i < saved.length; i++) { on[saved[i]] = true; }
         function onList() { var a = [], k; for (k = 0; k < LG.STYLES.length; k++) { if (on[LG.STYLES[k].id]) { a.push(LG.STYLES[k].id); } } return a; }
 
-        // ---- topo
-        var top = uiCustom(win, 380, 46, function (g, W, H) {
-            uiRect(g, 0, 0, W, H, UI.card);
-            uiRect(g, 0, 0, 4, H, UI.acc);
-            var f = uiFont(17, true), w1 = uiSize(g, "LEGENDA ", f).w;
-            uiText(g, "LEGENDA ", f, UI.txt, 16, 6);
-            uiText(g, "REELS", f, UI.acc, 16 + w1, 6);
-            uiText(g, "letra sincronizada no estilo EXTRAREEL", uiFont(10, false), UI.dim, 16, 28);
+        // ---- topo (estilo janela de Mac)
+        var top = uiCustom(win, UI.W, 52, function (g, W, H) {
+            uiCard(g, 0, 0, W, H, 12, UI.card, UI.line);
+            uiDoodles(g, 0, 0, W, H, UI.line, frame);
+            uiDot(g, 16, 13, 4.5, UI.dotR); uiDot(g, 30, 13, 4.5, UI.dotY); uiDot(g, 44, 13, 4.5, UI.dotG);
+            var f = uiFont(17, true), w1 = uiSize(g, "Low-Key", f).w;
+            uiText(g, "Low-Key", f, UI.txt, 14, 23);
+            uiText(g, "Reels", f, UI.acc, 14 + w1 + 6, 23);
             var fv = uiFont(10, true), vs = "v" + LG.VERSION;
-            uiText(g, vs, fv, UI.dim, W - uiSize(g, vs, fv).w - 10, 8);
+            uiText(g, vs, fv, UI.dim, W - uiSize(g, vs, fv).w - 12, 7);
+            // mini equalizador animado
+            var k, hs = [5, 11, 7, 13, 6];
+            for (k = 0; k < 5; k++) {
+                var bh = 4 + ((hs[k] + frame * (k % 2 ? 3 : 5)) % 12);
+                uiRound(g, W - 46 + k * 7, 44 - bh, 4, bh, 2, UI.acc);
+            }
         });
         top.alignment = ["fill", "top"];
 
+        // ---- secoes recolhiveis
+        var sections = [];
+        function relayout() { try { win.layout.layout(true); win.layout.resize(); } catch (e) {} }
+        function setOpen(sec, open, quiet) {
+            sec.open = open;
+            sec.body.visible = open;
+            sec.body.maximumSize = open ? [10000, 10000] : [10000, 0];
+            saveSetting("open" + sec.num, open ? "1" : "0");
+            if (!quiet) { relayout(); uiRedraw(sec.head); }
+        }
+        function section(num, title, defOpen) {
+            var sec = { num: num, open: true };
+            sec.head = win.add("button", undefined, title);
+            sec.head.preferredSize = [UI.W, 26]; sec.head.alignment = ["fill", "top"];
+            sec.head.onDraw = function (st) {
+                try {
+                    var g = this.graphics, W = this.size[0], H = this.size[1], over = st && st.mouseOver;
+                    uiRect(g, 0, 0, W, H, UI.bg);
+                    uiCard(g, 0, 0, W, H, 13, over ? UI.cardHi : UI.card, UI.line);
+                    uiDot(g, 15, H / 2, 8, UI.acc);
+                    uiTextC(g, String(num), uiFont(11, true), UI.white, 15, H / 2 - 7);
+                    uiText(g, this.text, uiFont(12, true), UI.txt, 30, H / 2 - 7);
+                    uiTri(g, W - 16, H / 2, sec.open ? "d" : "l", 5, sec.open ? UI.acc : UI.dim);
+                } catch (e) {}
+            };
+            sec.body = win.add("group");
+            sec.body.orientation = "column"; sec.body.alignChildren = ["fill", "top"]; sec.body.spacing = 6; sec.body.margins = [4, 2, 4, 4];
+            sec.head.onClick = function () { setOpen(sec, !sec.open); };
+            sec.defOpen = loadSetting("open" + num, defOpen ? "1" : "0") === "1";
+            sections.push(sec);
+            return sec;
+        }
+
         // ---- 1. tempo
-        uiHeader(win, "1", "Tempo das palavras");
-        var g1 = win.add("group"); g1.spacing = 8;
-        var bImport = uiButton(g1, "Importar JSON / SRT", "plain", 186);
-        var bScribe = uiButton(g1, "Transcrever (ElevenLabs)", "plain", 186);
-        var g2 = win.add("group"); g2.spacing = 6;
+        var s1 = section(1, "Tempo das palavras", true), b1 = s1.body;
+        var g1 = b1.add("group"); g1.spacing = 8;
+        var bImport = uiButton(g1, "Importar JSON / SRT", "plain", 170);
+        var bScribe = uiButton(g1, "Transcrever (ElevenLabs)", "plain", 170);
+        var g2 = b1.add("group"); g2.spacing = 6;
         uiLabel(g2, "API do ElevenLabs:");
-        var eKey = g2.add("edittext", undefined, "", { noecho: true }); eKey.characters = 16;
+        var eKey = g2.add("edittext", undefined, "", { noecho: true }); eKey.characters = 14;
         uiLabel(g2, "Modelo:");
         var eModel = g2.add("edittext", undefined, "scribe_v2"); eModel.characters = 8;
-        var cKeep = win.add("checkbox", undefined, "Lembrar a API neste computador");
-        var sStatus = uiLabel(win, "Nenhuma transcricao carregada."); sStatus.characters = 46;
+        var cKeep = b1.add("checkbox", undefined, "Lembrar a API neste computador");
+        var sStatus = uiLabel(b1, "Nenhuma transcricao carregada."); sStatus.characters = 44;
 
         // ---- 2. texto
-        uiHeader(win, "2", "SRT ou letra (uma frase por linha)");
-        var eLyr = win.add("edittext", undefined, "", { multiline: true, scrolling: true });
-        eLyr.preferredSize = [380, 120]; eLyr.alignment = ["fill", "top"];
+        var s2 = section(2, "SRT ou letra (uma frase por linha)", true), b2 = s2.body;
+        var eLyr = b2.add("edittext", undefined, "", { multiline: true, scrolling: true });
+        eLyr.preferredSize = [UI.W - 8, 90]; eLyr.alignment = ["fill", "top"];
 
-        // ---- 3. estilo (carrossel)
-        uiHeader(win, "3", "Estilo");
-        var gc = win.add("group"); gc.spacing = 6; gc.alignChildren = ["left", "center"];
-        var bPrev = uiButton(gc, "<", "prev", 30, 64);
-        var pv = uiCustom(gc, 308, 214, function (g, W, H) {
-            var st = LG.STYLES[cur], k;
-            uiRect(g, 0, 0, W, H, UI.card);
-            uiFrame(g, 0, 0, W, H, UI.line);
-            // "celular" 9:16 com a previa
-            var ph = H - 20, pw = Math.round(ph * 9 / 16), x0 = 10, y0 = 10, cx = x0 + pw / 2;
-            uiRect(g, x0, y0, pw, ph, UI.screen);
+        // ---- 3. estilo (carrossel animado)
+        var s3 = section(3, "Estilo", true), b3 = s3.body;
+        var gc = b3.add("group"); gc.spacing = 6; gc.alignChildren = ["left", "center"];
+        var bPrev = uiButton(gc, "<", "prev", 28, 56);
+        var pv = uiCustom(gc, UI.W - 76, 178, function (g, W, H) {
+            var st = LG.STYLES[cur], k, n = st.pv.length, a = st.anim, cyc = frame % (n + 3);
+            uiCard(g, 0, 0, W, H, 14, UI.card, UI.line);
+            uiDoodles(g, 0, 0, W, H, UI.line, frame);
+            // "celular" 9:16
+            var ph = H - 18, pw = Math.round(ph * 9 / 16), x0 = 10, y0 = 9, cx = x0 + pw / 2, sc = ph / 194;
+            uiCard(g, x0, y0, pw, ph, 10, UI.screen, UI.line);
+            uiRound(g, cx - 12, y0 + 5, 24, 5, 2.5, UI.line);
             var total = 0;
-            for (k = 0; k < st.pv.length; k++) { total += st.pv[k][1] * 1.3; }
-            var y = y0 + (ph - total) / 2;
-            for (k = 0; k < st.pv.length; k++) {
-                var ln = st.pv[k], f = uiFont(ln[1], true), c = uiMix(UI.screen, UI.txt, ln[2]);
-                if (st.fx === "burn" && k === st.pv.length - 1) { c = UI.acc; }
-                if (st.fx === "shake") {
-                    uiTextC(g, ln[0], f, uiMix(UI.screen, UI.acc, 0.55), cx + ln[3] - 3, y - 2);
-                    uiTextC(g, ln[0], f, uiMix(UI.screen, UI.txt, 0.35), cx + ln[3] + 3, y + 2);
+            for (k = 0; k < n; k++) { total += st.pv[k][1] * sc * 1.3; }
+            var y = y0 + (ph - total) / 2 + 3;
+            for (k = 0; k < n; k++) {
+                var ln = st.pv[k], text = ln[0], al = ln[2], dx = ln[3] * sc, dy = 0, f = uiFont(Math.max(8, Math.round(ln[1] * sc)), true), col;
+                if (a === "cum" || a === "shake") { al = k > cyc ? 0 : (k === Math.min(cyc, n - 1) ? 1 : 0.5); }
+                else if (a === "kar") { al = k <= cyc ? 1 : 0.26; }
+                else if (a === "type") { text = text.substr(0, Math.min(text.length, (frame % (text.length + 4)) + 1)); }
+                else if (a === "alt") { al = (frame % 4 < 2 ? 0 : 1) === (k % 2) ? 1 : 0; }
+                else if (a === "fade" || a === "burn") { al = Math.max(0, Math.min(1, ((frame % 9) + 1 - k * 1.5) / 3)); }
+                else if (a === "scr") { if (frame % 9 < 4) { text = scrambleText(text, frame + k); al = 0.55; } }
+                if (a === "shake") { dx += (frame % 2 ? 2 : -2) * (k % 2 ? 1 : -1); dy = frame % 3 - 1; }
+                if (al > 0.01) {
+                    col = uiMix(UI.screen, (a === "burn" && al < 0.99) ? UI.acc : UI.txt, al);
+                    uiTextC(g, text, f, col, cx + dx, y + dy);
                 }
-                uiTextC(g, ln[0], f, c, cx + ln[3], y);
-                y += ln[1] * 1.3;
+                y += ln[1] * sc * 1.3;
             }
-            if (st.fx === "wipe") {
-                uiRect(g, x0 + pw * 0.6, y0, pw * 0.4, ph, UI.screen);
-                uiRect(g, x0 + pw * 0.6, y0 + ph * 0.3, 2, ph * 0.4, UI.acc);
+            if (a === "wipe") {
+                var t = Math.min(1, (frame % 9) / 5), wx = x0 + 3 + (pw - 6) * t;
+                if (t < 1) { uiRect(g, wx, y0 + 14, x0 + pw - 3 - wx, ph - 28, UI.screen); uiRect(g, wx, y0 + ph * 0.3, 2, ph * 0.4, UI.acc); }
             }
-            if (st.fx === "burn") {
-                uiRect(g, cx + 26, y - 30, 7, 7, UI.acc); uiRect(g, cx + 36, y - 20, 4, 4, UI.accHi);
-                uiRect(g, cx - 40, y - 12, 5, 5, UI.accLo); uiRect(g, cx + 18, y - 8, 3, 3, UI.accHi);
-            }
-            uiFrame(g, x0, y0, pw, ph, UI.line);
             // coluna de texto
-            var tx = x0 + pw + 16, ty = y0 + 2;
-            if (st.isNew) {
-                uiRect(g, tx, ty, 42, 16, UI.acc);
-                uiText(g, "NOVO", uiFont(10, true), UI.white, tx + 7, ty + 2);
-                ty += 24;
-            } else {
-                uiFrame(g, tx, ty, 74, 16, UI.line);
-                uiText(g, "EXTRAREEL", uiFont(9, true), UI.dim, tx + 7, ty + 3);
-                ty += 24;
-            }
-            uiText(g, st.name, uiFont(20, true), UI.txt, tx, ty); ty += 32;
-            for (k = 0; k < st.desc.length; k++) { uiText(g, st.desc[k], uiFont(11, false), UI.dim, tx, ty); ty += 15; }
+            var tx = x0 + pw + 14, ty = y0 + 3;
+            if (st.isNew) { uiRound(g, tx, ty, 44, 16, 8, UI.acc); uiText(g, "NOVO", uiFont(10, true), UI.white, tx + 8, ty + 2); }
+            else { uiCard(g, tx, ty, 76, 16, 8, UI.card, UI.line); uiText(g, "EXTRAREEL", uiFont(9, true), UI.dim, tx + 9, ty + 3); }
+            ty += 22;
+            uiText(g, st.name, uiFont(19, true), UI.txt, tx, ty); ty += 28;
+            for (k = 0; k < st.desc.length; k++) { uiText(g, st.desc[k], uiFont(11, false), UI.dim, tx, ty); ty += 14; }
             var isOn = on[st.id];
-            uiRect(g, tx, H - 58, 8, 8, isOn ? UI.acc : UI.line);
-            uiText(g, isOn ? "Na alternancia" : "Fora da alternancia", uiFont(11, true), isOn ? UI.txt : UI.dim, tx + 14, H - 61);
-            uiText(g, (cur + 1) + " / " + LG.STYLES.length, uiFont(10, false), UI.dim, tx, H - 38);
+            uiDot(g, tx + 4, H - 44, 4, isOn ? UI.acc : UI.line);
+            uiText(g, isOn ? "Na alternancia" : "Fora da alternancia", uiFont(11, true), isOn ? UI.txt : UI.dim, tx + 13, H - 51);
             for (k = 0; k < LG.STYLES.length; k++) {
-                uiRect(g, tx + k * 11, H - 18, 8, k === cur ? 5 : 3, k === cur ? UI.acc : (on[LG.STYLES[k].id] ? UI.txt : UI.line));
+                if (k === cur) { uiRound(g, tx + k * 10 - 1, H - 22, 10, 6, 3, UI.acc); }
+                else { uiDot(g, tx + k * 10 + 4, H - 19, 2.5, on[LG.STYLES[k].id] ? UI.txt : UI.line); }
             }
         });
-        var bNext = uiButton(gc, ">", "next", 30, 64);
+        var bNext = uiButton(gc, ">", "next", 28, 56);
 
-        var cUse = win.add("checkbox", undefined, "Usar este estilo na alternancia");
-        var g3 = win.add("group"); g3.spacing = 6;
+        var cUse = b3.add("checkbox", undefined, "Usar este estilo na alternancia");
+        var g3 = b3.add("group"); g3.spacing = 6;
         uiLabel(g3, "Modo:");
         var dMode = g3.add("dropdownlist", undefined, ["Alternar entre os marcados", "Aleatorio entre os marcados", "So o estilo mostrado acima"]);
         dMode.selection = parseInt(loadSetting("mode", "0"), 10) || 0;
-        dMode.preferredSize = [250, 24];
-
-        var g4 = win.add("group"); g4.spacing = 12;
+        dMode.preferredSize = [240, 24];
+        var g4 = b3.add("group"); g4.spacing = 10;
         var cPost = g4.add("checkbox", undefined, "12 fps"); cPost.value = true;
         var cBlur = g4.add("checkbox", undefined, "Lens blur"); cBlur.value = true;
         var cShadow = g4.add("checkbox", undefined, "Sombra"); cShadow.value = false;
         var cZoom = g4.add("checkbox", undefined, "Zoom lento"); cZoom.value = true;
-        var g5 = win.add("group"); g5.spacing = 6;
+        var g5 = b3.add("group"); g5.spacing = 6;
         uiLabel(g5, "Atraso do audio na comp (s):");
         var eOff = g5.add("edittext", undefined, "0"); eOff.characters = 7;
 
-        // ---- rodape
-        var sep = uiCustom(win, 380, 1, function (g, W, H) { uiRect(g, 0, 0, W, 1, UI.line); });
-        sep.alignment = ["fill", "top"];
+        // ---- rodape (sempre visivel)
         var cReplace = win.add("checkbox", undefined, "Substituir as legendas que ja gerei nesta comp");
         cReplace.value = true;
         var g6 = win.add("group"); g6.spacing = 8;
-        var bGo = uiButton(g6, "GERAR / ATUALIZAR", "primary", 240, 36);
-        var bDel = uiButton(g6, "Remover geradas", "plain", 132, 36);
+        var bGo = uiButton(g6, "GERAR / ATUALIZAR", "primary", 222, 34);
+        var bDel = uiButton(g6, "Remover geradas", "plain", 130, 34);
 
         eKey.text = loadSetting("key", ""); cKeep.value = eKey.text !== "";
         eModel.text = loadSetting("model", "scribe_v2");
@@ -974,6 +1034,7 @@
             cur = (n + LG.STYLES.length) % LG.STYLES.length;
             cUse.value = on[LG.STYLES[cur].id] === true;
             saveSetting("cur", cur);
+            frame = 0;
             uiRedraw(pv);
         }
         bPrev.onClick = function () { showStyle(cur - 1); };
@@ -1000,7 +1061,7 @@
                 saveSetting("key", cKeep.value ? LG.trim(eKey.text) : "");
                 saveSetting("model", LG.trim(eModel.text));
                 if (!LG.trim(eLyr.text) && r.text && confirm("Colocar o texto transcrito na caixa para voce corrigir e quebrar em frases?")) { eLyr.text = r.text; }
-            } catch (e) { sStatus.text = "Falhou."; alert(e.toString()); }
+            } catch (e) { sStatus.text = "Nao transcreveu. Veja o aviso."; alert(e.toString()); }
         };
         bGo.onClick = function () {
             var m = dMode.selection ? dMode.selection.index : 0;
@@ -1014,8 +1075,22 @@
         };
         bDel.onClick = function () { try { LG.removeGenerated(); } catch (e) { alert(e.toString()); } };
 
+        // ---- animacao (previa + equalizador). Um unico timer global; some sozinho se o painel fechar.
+        try { if ($.global.__LKR_TASK) { app.cancelTask($.global.__LKR_TASK); } } catch (e1) {}
+        $.global.__LKR_TICK = function () {
+            try {
+                frame++;
+                if (s3.open) { pv.notify("onDraw"); }
+                top.notify("onDraw");
+            } catch (e) { try { app.cancelTask($.global.__LKR_TASK); } catch (e2) {} }
+        };
+        try { $.global.__LKR_TASK = app.scheduleTask("$.global.__LKR_TICK()", 420, true); } catch (e3) {}
+        win.onClose = function () { try { app.cancelTask($.global.__LKR_TASK); } catch (e) {} return true; };
+
         win.onResizing = win.onResize = function () { this.layout.resize(); };
         win.layout.layout(true);
+        for (i = 0; i < sections.length; i++) { if (!sections[i].defOpen) { setOpen(sections[i], false, true); } }
+        relayout();
         if (win instanceof Window) { win.center(); win.show(); }
         return win;
     }
