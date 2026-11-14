@@ -22,7 +22,7 @@ $.global.__LG_HEADLESS = true;
 
     var LG = {};
     LG.NAME = "chavebaixa reels";
-    LG.VERSION = "2.2.0";
+    LG.VERSION = "2.3.0";
     // de onde o carregador baixa as atualizacoes (pasta "raw" do repositorio no GitHub, terminando em /)
     LG.UPDATE_URL = "https://raw.githubusercontent.com/rivatto/legenda-reels/main/";
     LG.PREFIX = "LG | ";
